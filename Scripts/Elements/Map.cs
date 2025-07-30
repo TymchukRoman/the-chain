@@ -7,10 +7,10 @@ public partial class Map : Node3D
     [Export] public PackedScene CellScene;
     [Export] public float HexRadius = 1.0f;
 
-    [Export] public Vector3 MapMin = new Vector3(-50, 0, -50);
-    [Export] public Vector3 MapMax = new Vector3(50, 0, 50);
+    [Export] public Vector3 MapMin = new Vector3(-25, 0, -25);
+    [Export] public Vector3 MapMax = new Vector3(25, 0, 25);
 
-    public Dictionary<Vector2I, Cell> Cells = new();  // For lookup and addressing
+    public Dictionary<Vector2I, Cell> Cells = new();
 
     public override void _Ready()
     {
@@ -22,7 +22,6 @@ public partial class Map : Node3D
         float hexWidth = HexRadius * 2f;
         float hexHeight = Mathf.Sqrt(3) * HexRadius;
 
-        // Estimate column/row ranges to cover MapMin → MapMax
         int minQ = Mathf.FloorToInt(MapMin.X / (hexWidth * 0.75f));
         int maxQ = Mathf.CeilToInt(MapMax.X / (hexWidth * 0.75f));
         int minR = Mathf.FloorToInt(MapMin.Z / hexHeight);
@@ -32,13 +31,11 @@ public partial class Map : Node3D
         {
             for (int r = minR; r <= maxR; r++)
             {
-                // Offset layout (odd-q vertical)
                 float x = q * (hexWidth * 0.75f);
                 float z = hexHeight * (r + 0.5f * (q % 2));
 
                 Vector3 worldPos = new Vector3(x, 0, z);
 
-                // Only create cell if inside bounding box
                 if (worldPos.X < MapMin.X || worldPos.X > MapMax.X || worldPos.Z < MapMin.Z || worldPos.Z > MapMax.Z)
                     continue;
 
@@ -50,6 +47,8 @@ public partial class Map : Node3D
                 instance.GridPosition = gridPos;
 
                 Cells[gridPos] = instance;
+
+                instance.UpdateLabel();
             }
         }
     }

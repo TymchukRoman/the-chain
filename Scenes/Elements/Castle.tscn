@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://t0uk7ntnfc0j"]
+
+[ext_resource type="PackedScene" uid="uid://0qsubuf8qikm" path="res://Assets/3d/Castle/Castle FBX.fbx" id="1_2vf3g"]
+
+[node name="Castle" type="Node3D"]
+
+[node name="Castle FBX" parent="." instance=ExtResource("1_2vf3g")]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)

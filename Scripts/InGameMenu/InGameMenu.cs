@@ -1,4 +1,3 @@
-// InGameMenu.cs
 using Godot;
 using System;
 
@@ -7,7 +6,7 @@ public partial class InGameMenu : CanvasLayer
     public override void _Ready()
     {
         ProcessMode = ProcessModeEnum.Always;
-        Hide(); // Hide when the level first loads.
+        Hide();
     }
 
     public override void _UnhandledInput(InputEvent @event)
