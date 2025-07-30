@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://cvpqmjmwxjgaa"]
 
-[ext_resource type="Script" uid="uid://dr8f0nifrp6te" path="res://Scripts/CameraControl.cs" id="1_iukft"]
 [ext_resource type="PackedScene" uid="uid://cnlum3hcgtkki" path="res://Scenes/UI/InGameMenu.tscn" id="2_gl6un"]
+[ext_resource type="Script" uid="uid://cdh3didpv3wp1" path="res://Scripts/Camera/CameraRig.cs" id="2_j5yw3"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_ebmjs"]
 load_path = "res://.godot/imported/images.jpg-e4ded5d89bd2d4163aa556cfa800dad5.s3tc.ctex"
@@ -12,7 +12,7 @@ uv1_scale = Vector3(5, 5, 5)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_62tj5"]
 material = SubResource("StandardMaterial3D_g24sy")
-size = Vector2(3000, 3000)
+size = Vector2(1000, 1000)
 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_mqean"]
 points = PackedVector3Array(-500, 0, -500, -500, 0, 500, 500, 0, -500, 500, 0, 500)
@@ -29,8 +29,13 @@ collision_mask = 255
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
 shape = SubResource("ConvexPolygonShape3D_mqean")
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 46.8796, 583.021, 302.95)
-script = ExtResource("1_iukft")
-
 [node name="InGameMenu" parent="." instance=ExtResource("2_gl6un")]
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("2_j5yw3")
+
+[node name="CameraPivot" type="Node3D" parent="CameraRig"]
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 0.258819, 0.965926, 0, -0.965926, 0.258819, 0, 15, 15)
+current = true
