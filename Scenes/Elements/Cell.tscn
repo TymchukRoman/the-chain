@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://1j2q34l7skaq"]
+
+[ext_resource type="Script" uid="uid://ctmegvmgimprl" path="res://Scripts/Elements/Cell.cs" id="1_8l6ak"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_kkf02"]
+radial_segments = 6
+cap_bottom = false
+
+[node name="Cell" type="Node3D"]
+script = ExtResource("1_8l6ak")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.55885, 0, 0.9, 0, 0.05, 0, -0.9, 0, 1.55885, 0, 0, 0)
+mesh = SubResource("CylinderMesh_kkf02")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
