@@ -1,0 +1,36 @@
+[gd_scene load_steps=7 format=3 uid="uid://cvpqmjmwxjgaa"]
+
+[ext_resource type="Script" uid="uid://dr8f0nifrp6te" path="res://Scripts/CameraControl.cs" id="1_iukft"]
+[ext_resource type="PackedScene" uid="uid://cnlum3hcgtkki" path="res://Scenes/UI/InGameMenu.tscn" id="2_gl6un"]
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_ebmjs"]
+load_path = "res://.godot/imported/images.jpg-e4ded5d89bd2d4163aa556cfa800dad5.s3tc.ctex"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g24sy"]
+albedo_texture = SubResource("CompressedTexture2D_ebmjs")
+uv1_scale = Vector3(5, 5, 5)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_62tj5"]
+material = SubResource("StandardMaterial3D_g24sy")
+size = Vector2(3000, 3000)
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_mqean"]
+points = PackedVector3Array(-500, 0, -500, -500, 0, 500, 500, 0, -500, 500, 0, 500)
+
+[node name="Root" type="Node3D"]
+
+[node name="Background" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_62tj5")
+
+[node name="Ground" type="StaticBody3D" parent="."]
+collision_layer = 255
+collision_mask = 255
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("ConvexPolygonShape3D_mqean")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 46.8796, 583.021, 302.95)
+script = ExtResource("1_iukft")
+
+[node name="InGameMenu" parent="." instance=ExtResource("2_gl6un")]

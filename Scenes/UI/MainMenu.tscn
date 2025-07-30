@@ -1,0 +1,54 @@
+[gd_scene load_steps=5 format=3 uid="uid://db5pfhmxjahhr"]
+
+[ext_resource type="Script" uid="uid://cagwrqtbg0ja8" path="res://Scripts/MainMenu/Buttons/StartButton.cs" id="1_72sra"]
+[ext_resource type="Script" uid="uid://ct7bth10odj7p" path="res://Scripts/MainMenu/Buttons/LoadButton.cs" id="2_t6w0q"]
+[ext_resource type="Script" uid="uid://nln12byavffh" path="res://Scripts/MainMenu/Buttons/QuitButton.cs" id="3_k8um8"]
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_th8qa"]
+load_path = "res://.godot/imported/menu-bg.png-9ad8215768e5543a2787741635e17382.ctex"
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("CompressedTexture2D_th8qa")
+expand_mode = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 94.0
+offset_top = -173.0
+offset_right = 294.0
+offset_bottom = -72.0
+grow_vertical = 0
+
+[node name="StartButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+focus_neighbor_top = NodePath("../QuitButton")
+text = "Start"
+script = ExtResource("1_72sra")
+
+[node name="LoadButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Load"
+script = ExtResource("2_t6w0q")
+
+[node name="QuitButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+focus_neighbor_bottom = NodePath("../StartButton")
+text = "Quit"
+script = ExtResource("3_k8um8")
