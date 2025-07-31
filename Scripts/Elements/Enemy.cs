@@ -35,15 +35,12 @@ public partial class Enemy : CharacterBody3D
         SetupNavigationAgent();
         SetupHealthBar();
         
-        GD.Print("Enemy spawned at: " + GlobalPosition + " with collision layer: " + CollisionLayer);
-        GD.Print("Target castle position: " + _targetPosition);
     }
     
     public void InitializeHealth()
     {
         _currentHealth = MaxHealth;
         UpdateHealthBar();
-        GD.Print("Enemy health initialized: " + _currentHealth + "/" + MaxHealth);
     }
     
     private void SetupHealthBar()
@@ -212,7 +209,6 @@ public partial class Enemy : CharacterBody3D
             _stuckTimer += delta;
             if (_stuckTimer >= STUCK_TIME)
             {
-                GD.Print("Enemy stuck detected! Recalculating path...");
                 ForcePathRecalculation();
                 _stuckTimer = 0.0f;
             }
@@ -237,7 +233,6 @@ public partial class Enemy : CharacterBody3D
         if (_navigationAgent.IsNavigationFinished())
         {
             // We've reached the target
-            GD.Print("Enemy navigation finished - reaching castle!");
             ReachCastle();
             return;
         }
@@ -246,7 +241,6 @@ public partial class Enemy : CharacterBody3D
         float distanceToCastle = GlobalPosition.DistanceTo(_targetPosition);
         if (distanceToCastle < 1.0f) // If within 1 unit of castle
         {
-            GD.Print("Enemy close to castle (distance: " + distanceToCastle.ToString("F2") + ") - reaching castle!");
             ReachCastle();
             return;
         }
@@ -262,13 +256,11 @@ public partial class Enemy : CharacterBody3D
     
     private void OnTargetReached()
     {
-        GD.Print("Enemy reached target!");
         ReachCastle();
     }
     
     private void OnNavigationFinished()
     {
-        GD.Print("Enemy navigation finished!");
         ReachCastle();
     }
     
@@ -284,7 +276,6 @@ public partial class Enemy : CharacterBody3D
             _currentHealth = 0;
         }
         
-        GD.Print("Enemy took " + damage + " damage! Health: " + _currentHealth + "/" + MaxHealth);
         
         // Update health bar
         UpdateHealthBar();
@@ -292,7 +283,6 @@ public partial class Enemy : CharacterBody3D
         // Check if enemy should die (health <= 0)
         if (_currentHealth <= 0)
         {
-            GD.Print("Enemy health reached 0 or below - calling Die()");
             Die();
         }
     }
@@ -302,7 +292,6 @@ public partial class Enemy : CharacterBody3D
         if (_isDead) return; // Prevent multiple death calls
         
         _isDead = true;
-        GD.Print("Enemy died! Final health: " + _currentHealth);
         _game.AddRP(2); // +10 RP for killing enemy
         QueueFree();
     }
@@ -310,7 +299,6 @@ public partial class Enemy : CharacterBody3D
     private void ReachCastle()
     {
         _isDead = true;
-        GD.Print("Enemy reached castle!");
         _game.AddRP(-20); // -20 RP for enemy reaching castle
         QueueFree();
     }

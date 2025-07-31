@@ -27,7 +27,7 @@ public partial class Game : Node3D
     private const int WOOD_PER_RANK = 50; // Base wood per rank
     private float _lastFrameTime = 0.0f;
     
-    public void TryBuildTowerOn(Cell cell)
+    public void BuildTowerOnCell(Cell cell)
     {
         if (cell.IsOccupied)
         {
@@ -37,17 +37,24 @@ public partial class Game : Node3D
 
         if (!HasResource("wood", TowerCost))
         {
-            GD.Print("Not enough wood!");
+            GD.Print("Not enough wood to build tower!");
             return;
         }
 
         var tower = TowerScene.Instantiate<Tower>();
-        AddChild(tower);  // or parent to a TowerHolder node
+        AddChild(tower);
         tower.GlobalPosition = cell.GlobalPosition;
+        
+        // Set the cell reference for cleanup when tower is destroyed
+        tower.SetBuiltOnCell(cell);
+        
+        // Set the tower reference in the cell
+        cell.SetBuiltTower(tower);
 
         if (SpendResource("wood", TowerCost))
         {
             cell.MarkOccupied();
+            GD.Print("Tower built successfully!");
         }
         
         // Start game after building first tower
@@ -61,7 +68,6 @@ public partial class Game : Node3D
     {
         _ui = GetNode<GameUI>(UiPath);
         _spawner = GetNode<EnemySpawner>("EnemySpawner");
-        GD.Print("Game ready");
         UpdateUI();
     }
     
@@ -94,20 +100,113 @@ public partial class Game : Node3D
         int woodToGive = WOOD_PER_RANK * _rank;
         _resources["wood"] += woodToGive;
         
-        GD.Print("Resource supply! +" + woodToGive + " wood (Rank " + _rank + ")");
     }
     
     private void StartGame()
     {
         _gameStarted = true;
         _spawner.StartSpawning();
-        GD.Print("Game started! Enemies are spawning...");
     }
 
     public void AddRP(int amount)
     {
         _rp += amount;
         CheckRank();
+        UpdateUI();
+    }
+    
+    public void OnTowerDestroyed()
+    {
+        GD.Print("Tower destroyed!");
+        
+        // Close management panel if it's open
+        var panel = GetNode<HexManagementPanel>("HexManagementPanel");
+        if (panel != null && panel.Visible)
+        {
+            panel.Hide();
+        }
+    }
+    
+    public bool UpgradeTower(Tower tower)
+    {
+        if (tower == null)
+        {
+            GD.Print("Cannot upgrade: tower is null");
+            return false;
+        }
+        
+        if (!tower.CanUpgrade())
+        {
+            GD.Print("Cannot upgrade: tower at max level");
+            return false;
+        }
+        
+        int upgradeCost = tower.GetUpgradeCost();
+        if (!HasResource("wood", upgradeCost))
+        {
+            GD.Print("Cannot upgrade: insufficient wood (need " + upgradeCost + ")");
+            return false;
+        }
+        
+        if (SpendResource("wood", upgradeCost))
+        {
+            tower.TryUpgrade(this);
+            GD.Print("Tower upgraded successfully!");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    public bool RepairTower(Tower tower)
+    {
+        if (tower == null)
+        {
+            GD.Print("Cannot repair: tower is null");
+            return false;
+        }
+        
+        if (!tower.CanRepair())
+        {
+            GD.Print("Cannot repair: tower at full health");
+            return false;
+        }
+        
+        int repairCost = tower.GetRepairCost();
+        if (!HasResource("wood", repairCost))
+        {
+            GD.Print("Cannot repair: insufficient wood (need " + repairCost + ")");
+            return false;
+        }
+        
+        if (SpendResource("wood", repairCost))
+        {
+            tower.Repair();
+            GD.Print("Tower repaired successfully!");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    public void DemolishTower(Tower tower)
+    {
+        if (tower == null)
+        {
+            GD.Print("Cannot demolish: tower is null");
+            return;
+        }
+        
+        // Give refund for demolishing
+        int refund = tower.DemolishRefund;
+        _resources["wood"] += refund;
+        
+        GD.Print("Tower demolished! Refunded " + refund + " wood");
+        
+        // Demolish the tower (this will handle cell cleanup)
+        tower.Demolish();
+        
+        // Update UI to show refund
         UpdateUI();
     }
 
@@ -161,11 +260,9 @@ public partial class Game : Node3D
         {
             if (newRank > _rank)
             {
-                GD.Print("RANK UP! Rank " + _rank + " → Rank " + newRank + " (RP: " + _rp + ")");
             }
             else
             {
-                GD.Print("RANK DOWN! Rank " + _rank + " → Rank " + newRank + " (RP: " + _rp + ")");
                 // Penalty for demotion - lose some RP
                 _rp = Mathf.Max(0, _rp - 20);
             }

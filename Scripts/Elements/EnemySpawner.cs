@@ -30,8 +30,6 @@ public partial class EnemySpawner : Node3D
     {
         _game = GetNode<Game>("/root/Root");
         _currentSpawnInterval = InitialSpawnInterval;
-        GD.Print("EnemySpawner initialized with spawn area: " + SpawnAreaMin + " to " + SpawnAreaMax);
-        GD.Print("Starting Wave 1 - Enemies: 100 HP, 2.0 Speed, spawn every " + _currentSpawnInterval + "s");
     }
     
     public override void _Process(double delta)
@@ -69,7 +67,6 @@ public partial class EnemySpawner : Node3D
         // Increase spawn rate (decrease interval)
         _currentSpawnInterval = Mathf.Max(MinSpawnInterval, _currentSpawnInterval - SpawnRateIncrease);
         
-        GD.Print("Wave " + _currentWave + " - Enemies: " + newHealth + " HP, " + newSpeed.ToString("F1") + " Speed, spawn every " + _currentSpawnInterval.ToString("F1") + "s");
     }
     
     private void SpawnEnemy()
@@ -133,7 +130,6 @@ public partial class EnemySpawner : Node3D
 
                     _activeEnemies.Add(enemy);
 
-                    GD.Print("Regular Enemy spawned at: " + spawnPosition + " (Wave " + _currentWave + " - " + currentHealth + " HP, " + currentSpeed.ToString("F1") + " Speed) [Active: " + _activeEnemies.Count + "/" + MaxEnemies + "]");
     }
     
     private void SpawnTowerEnemy()
@@ -178,7 +174,6 @@ public partial class EnemySpawner : Node3D
         
         _activeTowerEnemies.Add(enemy);
         
-        GD.Print("Tower Enemy spawned at: " + spawnPosition + " (Wave " + _currentWave + " - " + currentHealth + " HP, " + currentSpeed.ToString("F1") + " Speed) [Active: " + _activeTowerEnemies.Count + "/" + MaxEnemies + "]");
     }
     
     public void StopSpawning()

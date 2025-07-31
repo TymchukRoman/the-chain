@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://cvpqmjmwxjgaa"]
+[gd_scene load_steps=18 format=3 uid="uid://cvpqmjmwxjgaa"]
 
 [ext_resource type="Script" uid="uid://cudqp7nc2np8k" path="res://Scripts/Game.cs" id="1_fgofq"]
 [ext_resource type="PackedScene" uid="uid://bykkrmxw0qfhv" path="res://Scenes/Elements/Tower.tscn" id="2_2irst"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" uid="uid://unynsvm46w4b" path="res://Scenes/Elements/Enemy.tscn" id="6_enemy"]
 [ext_resource type="PackedScene" uid="uid://bvn8x7y203k4m" path="res://Scenes/Elements/TowerEnemy.tscn" id="6_tower_enemy"]
 [ext_resource type="Script" uid="uid://14y36uqmwd0t" path="res://Scripts/Elements/EnemySpawner.cs" id="7_spawner"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/HexManagementPanel.tscn" id="8_panel"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_b2bpf"]
 
@@ -37,6 +38,8 @@ EnemyScene = ExtResource("6_enemy")
 [node name="InGameMenu" parent="." instance=ExtResource("2_gl6un")]
 
 [node name="GameUi" parent="." instance=ExtResource("2_7lihs")]
+
+[node name="HexManagementPanel" parent="." instance=ExtResource("8_panel")]
 
 [node name="EnemySpawner" type="Node3D" parent="."]
 script = ExtResource("7_spawner")

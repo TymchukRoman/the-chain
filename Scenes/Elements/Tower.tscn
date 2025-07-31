@@ -1,33 +1,25 @@
-[gd_scene load_steps=5 format=3 uid="uid://bykkrmxw0qfhv"]
+[gd_scene load_steps=4 format=3 uid="uid://bykkrmxw0qfhv"]
 
 [ext_resource type="Script" uid="uid://beyaidci2k5jo" path="res://Scripts/Tower/Tower.cs" id="1_5gw1o"]
+[ext_resource type="PackedScene" uid="uid://pu6cgd53017f" path="res://Assets/3d/Tower/Tower.glb" id="2_jwwul"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tower"]
-albedo_color = Color(0.2, 0.6, 0.8, 1)
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_5gw1o"]
-material = SubResource("StandardMaterial3D_tower")
-radius = 0.4
-height = 1.2
-
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tower"]
-radius = 0.4
-height = 1.2
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_cvrfc"]
 
 [node name="Tower" type="Node3D"]
 script = ExtResource("1_5gw1o")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.999999, -0.000997225, 0.000151344, 0.000997325, 0.999999, -0.000689135, -0.000150684, 0.00068928, 1, 0, 0.6, 0)
-mesh = SubResource("CapsuleMesh_5gw1o")
+[node name="TowerModel" parent="." instance=ExtResource("2_jwwul")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0, 0)
 
 [node name="StaticBody3D" type="StaticBody3D" parent="."]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
-shape = SubResource("CapsuleShape3D_tower")
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0.5, 0)
+shape = SubResource("CylinderShape3D_cvrfc")
 
 [node name="Area3D" type="Area3D" parent="."]
 collision_mask = 2
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
-shape = SubResource("CapsuleShape3D_tower")
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0.5, 0)
+shape = SubResource("CylinderShape3D_cvrfc")

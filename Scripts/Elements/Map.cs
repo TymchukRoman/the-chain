@@ -102,9 +102,8 @@ public partial class Map : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Left)
+        if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Right)
         {
-            GD.Print("Clicked");
             var viewport = GetViewport();
             var camera = GetViewport().GetCamera3D();
             var from = camera.ProjectRayOrigin(mouseEvent.Position);
@@ -117,16 +116,22 @@ public partial class Map : Node3D
                 To = to,
                 CollisionMask = 1
             });
-            GD.Print(result);
 
             if (result.TryGetValue("collider", out var colliderVariant))
             {
                 var collider = colliderVariant.AsGodotObject();
 
-                // Check if clicking on a tower for upgrade
+                // Check if clicking on a cell or tower for management panel
                 if (collider is Node3D node)
                 {
-                    // Check if it's a tower
+                    // Check if it's a cell
+                    if (node.GetParent() is Cell cell)
+                    {
+                        cell.OnRightClick();
+                        return;
+                    }
+                    
+                    // Check if it's a tower (or tower child)
                     var tower = node as Tower;
                     if (tower == null && node.GetParent() is Tower parentTower)
                     {
@@ -135,23 +140,13 @@ public partial class Map : Node3D
                     
                     if (tower != null)
                     {
-                        GD.Print("Tower upgrade attempt");
-                        if (tower.TryUpgrade(_game))
+                        // Find the cell this tower is built on
+                        var towerCell = tower.GetBuiltOnCell();
+                        if (towerCell != null)
                         {
-                            GD.Print("Tower upgraded successfully!");
+                            towerCell.OnRightClick();
+                            return;
                         }
-                        else
-                        {
-                            GD.Print("Tower upgrade failed - insufficient resources or max level reached");
-                        }
-                        return;
-                    }
-                    
-                    // Check if it's a cell for building
-                    if (node.GetParent() is Cell cell)
-                    {
-                        GD.Print("Build call");
-                        _game.TryBuildTowerOn(cell);
                     }
                 }
             }

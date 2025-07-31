@@ -44,14 +44,12 @@ public partial class TowerEnemy : CharacterBody3D
         SetupHealthBar();
         FindTargetTower();
         
-        GD.Print("TowerEnemy spawned at: " + GlobalPosition + " with collision layer: " + CollisionLayer + ", collision mask: " + CollisionMask);
     }
     
     public void InitializeHealth()
     {
         _currentHealth = MaxHealth;
         UpdateHealthBar();
-        GD.Print("TowerEnemy health initialized: " + _currentHealth + "/" + MaxHealth);
     }
     
     private void SetupHealthBar()
@@ -173,7 +171,6 @@ public partial class TowerEnemy : CharacterBody3D
         _navigationAgent.PathMaxDistance = 1.0f;
         _navigationAgent.PathDesiredDistance = 0.5f;
         
-        GD.Print("TowerEnemy: Navigation agent set up");
     }
     
     private void FindTargetTower()
@@ -183,7 +180,6 @@ public partial class TowerEnemy : CharacterBody3D
         
         // Get all towers in the scene
         var towers = GetTree().GetNodesInGroup("towers");
-        GD.Print("TowerEnemy: Found " + towers.Count + " towers in group");
         
         foreach (var towerNode in towers)
         {
@@ -192,7 +188,6 @@ public partial class TowerEnemy : CharacterBody3D
                                  if (tower.IsAlive())
                  {
                      float distance = GlobalPosition.DistanceTo(tower.GetTowerPosition());
-                     GD.Print("TowerEnemy: Found tower at distance " + distance);
                      if (distance < closestDistance)
                      {
                          closestDistance = distance;
@@ -201,12 +196,10 @@ public partial class TowerEnemy : CharacterBody3D
                  }
                 else
                 {
-                    GD.Print("TowerEnemy: Found dead tower, skipping");
                 }
             }
             else
             {
-                GD.Print("TowerEnemy: Found non-tower node in towers group: " + towerNode.GetType());
             }
         }
         
@@ -214,11 +207,9 @@ public partial class TowerEnemy : CharacterBody3D
          {
              _targetPosition = _targetTower.GetTowerPosition();
              _navigationAgent.TargetPosition = _targetPosition;
-             GD.Print("TowerEnemy targeting tower at: " + _targetPosition + " (distance: " + closestDistance + ")");
          }
         else
         {
-            GD.Print("TowerEnemy: No towers found, targeting castle instead");
             _targetPosition = new Vector3(0.3f, 0, 6.6f); // Castle position
             _navigationAgent.TargetPosition = _targetPosition;
         }
@@ -234,7 +225,6 @@ public partial class TowerEnemy : CharacterBody3D
         // Check if target tower is still alive
         if (_targetTower != null && !_targetTower.IsAlive())
         {
-            GD.Print("TowerEnemy: Target tower died, finding new target");
             FindTargetTower();
         }
         
@@ -244,18 +234,15 @@ public partial class TowerEnemy : CharacterBody3D
              float distanceToTower = GlobalPosition.DistanceTo(_targetTower.GetTowerPosition());
              if (distanceToTower <= _attackRange)
              {
-                 GD.Print("TowerEnemy: In attack range! Distance: " + distanceToTower);
                  AttackTower((float)delta);
                  return;
              }
              else
              {
-                 GD.Print("TowerEnemy: Moving to tower, distance: " + distanceToTower);
              }
          }
         else
         {
-            GD.Print("TowerEnemy: No target tower, moving to castle");
         }
         
         // Move towards target
@@ -271,7 +258,6 @@ public partial class TowerEnemy : CharacterBody3D
             _stuckTimer += delta;
             if (_stuckTimer >= STUCK_TIME)
             {
-                GD.Print("TowerEnemy stuck detected! Recalculating path...");
                 FindTargetTower();
                 _stuckTimer = 0.0f;
             }
@@ -290,7 +276,6 @@ public partial class TowerEnemy : CharacterBody3D
         {
             if (_targetTower == null)
             {
-                GD.Print("TowerEnemy reached castle!");
                 _game.AddRP(-20);
                 QueueFree();
             }
@@ -312,7 +297,6 @@ public partial class TowerEnemy : CharacterBody3D
         {
             _targetTower.TakeDamage(DamageToTower);
             _attackTimer = 0.0f;
-            GD.Print("TowerEnemy attacked tower for " + DamageToTower + " damage!");
         }
     }
     
@@ -323,7 +307,6 @@ public partial class TowerEnemy : CharacterBody3D
         _currentHealth -= damage;
         if (_currentHealth < 0) _currentHealth = 0;
         
-        GD.Print("TowerEnemy took " + damage + " damage! Health: " + _currentHealth + "/" + MaxHealth);
         UpdateHealthBar();
         
         if (_currentHealth <= 0)
@@ -337,7 +320,6 @@ public partial class TowerEnemy : CharacterBody3D
         if (_isDead) return;
         
         _isDead = true;
-        GD.Print("TowerEnemy died!");
         _game.AddRP(15); // More RP for killing tower enemies
         QueueFree();
     }

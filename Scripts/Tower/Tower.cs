@@ -18,7 +18,13 @@ public partial class Tower : Node3D
     
     // Tower HP system
     [Export] public int MaxHealth = 100;
+    [Export] public int RepairCost = 30;
+    [Export] public int DemolishRefund = 10;
     private int _currentHealth;
+    
+    // Cell reference for cleanup
+    private Cell _builtOnCell;
+    private Game _game;
     
     private float _fireTimer = 0.0f;
     private Node3D _currentTarget = null; // Can be Enemy or TowerEnemy
@@ -71,8 +77,10 @@ public partial class Tower : Node3D
         
         // Initialize tower health
         _currentHealth = MaxHealth;
+        
+        // Get reference to Game
+        _game = GetNode<Game>("/root/Root");
 
-        GD.Print("Tower initialized with range: " + Range + ", level: " + _currentLevel + ", health: " + _currentHealth);
     }
     
     public override void _Process(double delta)
@@ -100,7 +108,6 @@ public partial class Tower : Node3D
     {
         if (body is Enemy || body is TowerEnemy)
         {
-            GD.Print("Tower detected enemy entering range!");
             _enemiesInRange.Add(body);
             if (_currentTarget == null)
             {
@@ -113,7 +120,6 @@ public partial class Tower : Node3D
     {
         if (body is Enemy || body is TowerEnemy)
         {
-            GD.Print("Tower detected enemy leaving range!");
             _enemiesInRange.Remove(body);
             if (_currentTarget == body)
             {
@@ -144,7 +150,6 @@ public partial class Tower : Node3D
         
         if (_currentTarget != null)
         {
-            GD.Print("Tower found new target! Distance: " + closestDistance);
         }
     }
     
@@ -152,7 +157,6 @@ public partial class Tower : Node3D
     {
         if (_currentTarget == null || !IsInstanceValid(_currentTarget)) return;
         
-        GD.Print("Tower FIRING at enemy! Damage: " + Damage);
         
         // Create projectile
         var projectile = new Projectile();
@@ -240,7 +244,6 @@ public partial class Tower : Node3D
         // Calculate next upgrade cost
         _upgradeCost = UpgradeCost * _currentLevel+1; // 20, 40, 60
         
-        GD.Print("Tower upgraded to level " + _currentLevel + "! Damage: " + Damage + ", FireRate: " + FireRate + ", Range: " + Range);
         
         return true;
     }
@@ -272,12 +275,31 @@ public partial class Tower : Node3D
         _currentHealth -= damage;
         if (_currentHealth < 0) _currentHealth = 0;
         
-        GD.Print("Tower took " + damage + " damage! Health: " + _currentHealth + "/" + MaxHealth);
         UpdateHealthBar();
+        
+        // Refresh management panel if it's open for this cell
+        if (_builtOnCell != null)
+        {
+            var panel = GetNode<HexManagementPanel>("/root/Root/HexManagementPanel");
+            if (panel != null)
+            {
+                panel.RefreshPanel();
+            }
+        }
         
         if (_currentHealth <= 0)
         {
-            GD.Print("Tower destroyed!");
+            // Mark the cell as empty when tower is destroyed
+            if (_builtOnCell != null)
+            {
+                _builtOnCell.RemoveTower();
+                _builtOnCell.MarkEmpty();
+            }
+            // Notify Game that tower was destroyed
+            if (_game != null)
+            {
+                _game.OnTowerDestroyed();
+            }
             QueueFree();
         }
     }
@@ -290,6 +312,71 @@ public partial class Tower : Node3D
     public bool IsAlive()
     {
         return _currentHealth > 0;
+    }
+    
+    public int GetCurrentHealth()
+    {
+        return _currentHealth;
+    }
+    
+    public void SetBuiltOnCell(Cell cell)
+    {
+        _builtOnCell = cell;
+    }
+    
+    public Cell GetBuiltOnCell()
+    {
+        return _builtOnCell;
+    }
+    
+    public bool CanRepair()
+    {
+        return _currentHealth < MaxHealth;
+    }
+    
+    public int GetRepairCost()
+    {
+        return RepairCost;
+    }
+    
+    public void Repair()
+    {
+        if (_currentHealth < MaxHealth)
+        {
+            _currentHealth = MaxHealth;
+            UpdateHealthBar();
+            GD.Print("Tower repaired to full health: " + _currentHealth + "/" + MaxHealth);
+            
+            // Refresh management panel if it's open for this cell
+            if (_builtOnCell != null)
+            {
+                var panel = GetNode<HexManagementPanel>("/root/Root/HexManagementPanel");
+                if (panel != null)
+                {
+                    panel.RefreshPanel();
+                }
+            }
+        }
+    }
+    
+    public void Demolish()
+    {
+        GD.Print("Tower demolished!");
+        
+        // Mark the cell as empty
+        if (_builtOnCell != null)
+        {
+            _builtOnCell.RemoveTower();
+            _builtOnCell.MarkEmpty();
+        }
+        
+        // Notify Game that tower was demolished
+        if (_game != null)
+        {
+            _game.OnTowerDestroyed();
+        }
+        
+        QueueFree();
     }
     
     private void SetupHealthBar()

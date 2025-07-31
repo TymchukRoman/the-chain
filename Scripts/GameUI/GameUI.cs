@@ -11,6 +11,7 @@ public partial class GameUI : CanvasLayer
     private Label _waveLabel;
     private Label _supplyTimerLabel;
 
+
     public override void _Ready()
     {
         _rankLabel = GetNode<Label>("Panel/HBoxContainer/Rank");
@@ -20,6 +21,7 @@ public partial class GameUI : CanvasLayer
         _peopleLabel = GetNode<Label>("Panel/HBoxContainer/People");
         _waveLabel = GetNode<Label>("Panel/HBoxContainer/Wave");
         _supplyTimerLabel = GetNode<Label>("Panel/HBoxContainer/SupplyTimer");
+
     }
 
     public void UpdateUI(int rp, int rank, Dictionary<string, int> resources, int currentWave = 1, float timeUntilSupply = 0.0f)
@@ -54,5 +56,7 @@ public partial class GameUI : CanvasLayer
             
             _supplyTimerLabel.Text = $"Supply: {minutes:00}:{seconds:00}";
         }
+        
+
     }
 }
