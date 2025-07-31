@@ -45,8 +45,10 @@ public partial class Game : Node3D
         AddChild(tower);  // or parent to a TowerHolder node
         tower.GlobalPosition = cell.GlobalPosition;
 
-        SpendResource("wood", TowerCost);
-        cell.MarkOccupied();
+        if (SpendResource("wood", TowerCost))
+        {
+            cell.MarkOccupied();
+        }
         
         // Start game after building first tower
         if (!_gameStarted)
@@ -109,12 +111,15 @@ public partial class Game : Node3D
         UpdateUI();
     }
 
-    public void SpendResource(string type, int amount)
+    public bool SpendResource(string type, int amount)
     {
-        if (_resources.ContainsKey(type))
-            _resources[type] = Mathf.Max(0, _resources[type] - amount);
-
-        UpdateUI();
+        if (_resources.ContainsKey(type) && _resources[type] >= amount)
+        {
+            _resources[type] -= amount;
+            UpdateUI();
+            return true;
+        }
+        return false;
     }
 
     public bool HasResource(string type, int amount)

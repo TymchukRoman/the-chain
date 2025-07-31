@@ -123,10 +123,36 @@ public partial class Map : Node3D
             {
                 var collider = colliderVariant.AsGodotObject();
 
-                if (collider is Node3D node && node.GetParent() is Cell cell)
+                // Check if clicking on a tower for upgrade
+                if (collider is Node3D node)
                 {
-                    GD.Print("Build call");
-                    _game.TryBuildTowerOn(cell);
+                    // Check if it's a tower
+                    var tower = node as Tower;
+                    if (tower == null && node.GetParent() is Tower parentTower)
+                    {
+                        tower = parentTower;
+                    }
+                    
+                    if (tower != null)
+                    {
+                        GD.Print("Tower upgrade attempt");
+                        if (tower.TryUpgrade(_game))
+                        {
+                            GD.Print("Tower upgraded successfully!");
+                        }
+                        else
+                        {
+                            GD.Print("Tower upgrade failed - insufficient resources or max level reached");
+                        }
+                        return;
+                    }
+                    
+                    // Check if it's a cell for building
+                    if (node.GetParent() is Cell cell)
+                    {
+                        GD.Print("Build call");
+                        _game.TryBuildTowerOn(cell);
+                    }
                 }
             }
         }

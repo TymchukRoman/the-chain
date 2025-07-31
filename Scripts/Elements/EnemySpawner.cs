@@ -4,7 +4,8 @@ using System.Collections.Generic;
 public partial class EnemySpawner : Node3D
 {
     [Export] public PackedScene EnemyScene;
-    [Export] public float InitialSpawnInterval = 3.0f; // Starting spawn interval
+    [Export] public PackedScene TowerEnemyScene;
+    [Export] public float InitialSpawnInterval = 1.5f; // Starting spawn interval (increased spawn rate)
     [Export] public int MaxEnemies = 15; // Increased max enemies
     [Export] public Vector3 SpawnAreaMin = new Vector3(-20, 0, -8);
     [Export] public Vector3 SpawnAreaMax = new Vector3(20, 0, -6);
@@ -20,6 +21,7 @@ public partial class EnemySpawner : Node3D
     private float _spawnTimer = 0.0f;
     private float _difficultyTimer = 0.0f;
     private List<Enemy> _activeEnemies = new List<Enemy>();
+    private List<TowerEnemy> _activeTowerEnemies = new List<TowerEnemy>();
     private Game _game;
     private int _currentWave = 1;
     private float _currentSpawnInterval;
@@ -45,7 +47,7 @@ public partial class EnemySpawner : Node3D
         }
         
         // Spawn enemies continuously if under max limit
-        if (_spawnTimer >= _currentSpawnInterval && _activeEnemies.Count < MaxEnemies)
+        if (_spawnTimer >= _currentSpawnInterval && (_activeEnemies.Count + _activeTowerEnemies.Count) < MaxEnemies)
         {
             SpawnEnemy();
             _spawnTimer = 0.0f;
@@ -53,6 +55,7 @@ public partial class EnemySpawner : Node3D
         
         // Clean up dead enemies
         _activeEnemies.RemoveAll(enemy => !IsInstanceValid(enemy));
+        _activeTowerEnemies.RemoveAll(enemy => !IsInstanceValid(enemy));
     }
     
     private void IncreaseDifficulty()
@@ -70,6 +73,25 @@ public partial class EnemySpawner : Node3D
     }
     
     private void SpawnEnemy()
+    {
+        // Randomly choose between regular enemy and tower enemy
+        bool spawnTowerEnemy = GD.Randf() < 0.3f; // 30% chance for tower enemy
+        
+        if (spawnTowerEnemy && TowerEnemyScene != null)
+        {
+            SpawnTowerEnemy();
+        }
+        else if (EnemyScene != null)
+        {
+            SpawnRegularEnemy();
+        }
+        else
+        {
+            return;
+        }
+    }
+    
+    private void SpawnRegularEnemy()
     {
         if (EnemyScene == null) return;
         
@@ -111,7 +133,52 @@ public partial class EnemySpawner : Node3D
 
                     _activeEnemies.Add(enemy);
 
-                    GD.Print("Enemy spawned at: " + spawnPosition + " (Wave " + _currentWave + " - " + currentHealth + " HP, " + currentSpeed.ToString("F1") + " Speed) [Active: " + _activeEnemies.Count + "/" + MaxEnemies + "]");
+                    GD.Print("Regular Enemy spawned at: " + spawnPosition + " (Wave " + _currentWave + " - " + currentHealth + " HP, " + currentSpeed.ToString("F1") + " Speed) [Active: " + _activeEnemies.Count + "/" + MaxEnemies + "]");
+    }
+    
+    private void SpawnTowerEnemy()
+    {
+        if (TowerEnemyScene == null) return;
+        
+        // Random position in spawn area, but ensure it's within map boundaries
+        float x = (float)GD.RandRange(SpawnAreaMin.X, SpawnAreaMax.X);
+        float z = (float)GD.RandRange(SpawnAreaMin.Z, SpawnAreaMax.Z);
+        
+        // Clamp to map boundaries (assuming map is -25 to 25)
+        x = Mathf.Clamp(x, -24, 24);
+        z = Mathf.Clamp(z, -24, 24);
+        
+        Vector3 spawnPosition = new Vector3(x, 0, z);
+        
+        // Check if spawn position is valid (not too close to castle)
+        float distanceToCastle = spawnPosition.DistanceTo(new Vector3(0, 0, 6));
+        if (distanceToCastle < 3.0f)
+        {
+            // Too close to castle, try a different position
+            spawnPosition = new Vector3(
+                (float)GD.RandRange(-20, 20),
+                0,
+                (float)GD.RandRange(-8, -4)
+            );
+        }
+        
+        var enemy = TowerEnemyScene.Instantiate<TowerEnemy>();
+        AddChild(enemy);
+        enemy.GlobalPosition = spawnPosition;
+        
+        // Apply current wave stats
+        int currentHealth = 80 + (int)(HealthIncreasePerWave * (_currentWave - 1));
+        float currentSpeed = Mathf.Min(MaxSpeed, 2.5f + (SpeedIncreasePerWave * (_currentWave - 1)));
+        
+        enemy.MaxHealth = currentHealth;
+        enemy.Speed = currentSpeed;
+        
+        // Initialize health after setting MaxHealth
+        enemy.InitializeHealth();
+        
+        _activeTowerEnemies.Add(enemy);
+        
+        GD.Print("Tower Enemy spawned at: " + spawnPosition + " (Wave " + _currentWave + " - " + currentHealth + " HP, " + currentSpeed.ToString("F1") + " Speed) [Active: " + _activeTowerEnemies.Count + "/" + MaxEnemies + "]");
     }
     
     public void StopSpawning()

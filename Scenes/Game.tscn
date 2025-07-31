@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://cvpqmjmwxjgaa"]
+[gd_scene load_steps=17 format=3 uid="uid://cvpqmjmwxjgaa"]
 
 [ext_resource type="Script" uid="uid://cudqp7nc2np8k" path="res://Scripts/Game.cs" id="1_fgofq"]
 [ext_resource type="PackedScene" uid="uid://bykkrmxw0qfhv" path="res://Scenes/Elements/Tower.tscn" id="2_2irst"]
@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://1j2q34l7skaq" path="res://Scenes/Elements/Cell.tscn" id="4_kldst"]
 [ext_resource type="PackedScene" uid="uid://t0uk7ntnfc0j" path="res://Scenes/Elements/Castle.tscn" id="5_b2bpf"]
 [ext_resource type="PackedScene" uid="uid://unynsvm46w4b" path="res://Scenes/Elements/Enemy.tscn" id="6_enemy"]
+[ext_resource type="PackedScene" uid="uid://bvn8x7y203k4m" path="res://Scenes/Elements/TowerEnemy.tscn" id="6_tower_enemy"]
 [ext_resource type="Script" uid="uid://14y36uqmwd0t" path="res://Scripts/Elements/EnemySpawner.cs" id="7_spawner"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_b2bpf"]
@@ -40,7 +41,7 @@ EnemyScene = ExtResource("6_enemy")
 [node name="EnemySpawner" type="Node3D" parent="."]
 script = ExtResource("7_spawner")
 EnemyScene = ExtResource("6_enemy")
-MaxEnemies = 8
+TowerEnemyScene = ExtResource("6_tower_enemy")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_b2bpf")

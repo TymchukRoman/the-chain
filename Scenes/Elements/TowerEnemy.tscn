@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3 uid="uid://bvn8x7y203k4m"]
+
+[ext_resource type="Script" uid="uid://cunqyy68ruxx" path="res://Scripts/Elements/TowerEnemy.cs" id="1_tower_enemy"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_tower_enemy"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tower_enemy"]
+albedo_color = Color(0.2, 0.6, 1, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_q53wh"]
+
+[node name="TowerEnemy" type="CharacterBody3D"]
+collision_layer = 2
+script = ExtResource("1_tower_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0.2, 0)
+mesh = SubResource("BoxMesh_tower_enemy")
+surface_material_override/0 = SubResource("StandardMaterial3D_tower_enemy")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 0, 0.2, 0)
+shape = SubResource("BoxShape3D_q53wh")
