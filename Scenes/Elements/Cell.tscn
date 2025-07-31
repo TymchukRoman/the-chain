@@ -1,10 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://1j2q34l7skaq"]
+[gd_scene load_steps=4 format=3 uid="uid://1j2q34l7skaq"]
 
 [ext_resource type="Script" uid="uid://ctmegvmgimprl" path="res://Scripts/Elements/Cell.cs" id="1_8l6ak"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_kkf02"]
 radial_segments = 6
 cap_bottom = false
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_8l6ak"]
+height = 0.1
+radius = 0.9
 
 [node name="Cell" type="Node3D"]
 script = ExtResource("1_8l6ak")
@@ -13,9 +17,12 @@ script = ExtResource("1_8l6ak")
 transform = Transform3D(1.55885, 0, 0.9, 0, 0.05, 0, -0.9, 0, 1.55885, 0, 0, 0)
 mesh = SubResource("CylinderMesh_kkf02")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-
 [node name="Label3D" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 billboard = 1
 font_size = 50
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+shape = SubResource("CylinderShape3D_8l6ak")

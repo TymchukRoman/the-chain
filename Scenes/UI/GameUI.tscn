@@ -1,0 +1,39 @@
+[gd_scene load_steps=2 format=3 uid="uid://clchugy4gfjl3"]
+
+[ext_resource type="Script" uid="uid://bynem0tc3fgbc" path="res://Scripts/GameUI/GameUI.cs" id="1_13cgw"]
+
+[node name="GameUi" type="CanvasLayer"]
+script = ExtResource("1_13cgw")
+
+[node name="Panel" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_constants/separation = 65
+
+[node name="Rank" type="Label" parent="Panel/HBoxContainer"]
+layout_mode = 2
+
+[node name="Wood" type="Label" parent="Panel/HBoxContainer"]
+layout_mode = 2
+
+[node name="Ammo" type="Label" parent="Panel/HBoxContainer"]
+layout_mode = 2
+
+[node name="Food" type="Label" parent="Panel/HBoxContainer"]
+layout_mode = 2
+
+[node name="People" type="Label" parent="Panel/HBoxContainer"]
+layout_mode = 2
+
+[node name="Wave" type="Label" parent="Panel/HBoxContainer"]
+layout_mode = 2
+
+[node name="SupplyTimer" type="Label" parent="Panel/HBoxContainer"]
+layout_mode = 2

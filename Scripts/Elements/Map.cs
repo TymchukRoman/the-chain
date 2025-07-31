@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 public partial class Map : Node3D
 {
+    private Game _game;
     [Export] public PackedScene CellScene;
     [Export] public float HexRadius = 1.0f;
 
@@ -11,10 +12,13 @@ public partial class Map : Node3D
     [Export] public Vector3 MapMax = new Vector3(25, 0, 25);
 
     public Dictionary<Vector2I, Cell> Cells = new();
+    private NavigationRegion3D _navigationRegion;
 
     public override void _Ready()
     {
         GenerateHexGrid();
+        SetupNavigationRegion();
+        _game = GetParent<Game>();
     }
 
     private void GenerateHexGrid()
@@ -53,8 +57,78 @@ public partial class Map : Node3D
         }
     }
 
+    private void SetupNavigationRegion()
+    {
+        // Create NavigationRegion3D
+        _navigationRegion = new NavigationRegion3D();
+        AddChild(_navigationRegion);
+
+        // Create a simple navigation mesh covering the entire map
+        var navigationMesh = new NavigationMesh();
+        
+        // Create vertices for a simple rectangular navigation mesh
+        var vertices = new Vector3[]
+        {
+            new Vector3(MapMin.X, 0, MapMin.Z),
+            new Vector3(MapMax.X, 0, MapMin.Z),
+            new Vector3(MapMax.X, 0, MapMax.Z),
+            new Vector3(MapMin.X, 0, MapMax.Z)
+        };
+
+        // Create polygon indices (two triangles forming a rectangle)
+        var polygonIndices = new int[]
+        {
+            0, 1, 2,  // First triangle
+            0, 2, 3   // Second triangle
+        };
+
+        // Set up the navigation mesh
+        navigationMesh.Vertices = vertices;
+        navigationMesh.AddPolygon(polygonIndices);
+
+        // Assign the navigation mesh to the region
+        _navigationRegion.NavigationMesh = navigationMesh;
+    }
+
     public Cell GetCell(Vector2I gridPosition)
     {
         return Cells.TryGetValue(gridPosition, out var cell) ? cell : null;
+    }
+
+    public NavigationRegion3D GetNavigationRegion()
+    {
+        return _navigationRegion;
+    }
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Left)
+        {
+            GD.Print("Clicked");
+            var viewport = GetViewport();
+            var camera = GetViewport().GetCamera3D();
+            var from = camera.ProjectRayOrigin(mouseEvent.Position);
+            var to = from + camera.ProjectRayNormal(mouseEvent.Position) * 1000;
+
+            var space = GetWorld3D().DirectSpaceState;
+            var result = space.IntersectRay(new PhysicsRayQueryParameters3D
+            {
+                From = from,
+                To = to,
+                CollisionMask = 1
+            });
+            GD.Print(result);
+
+            if (result.TryGetValue("collider", out var colliderVariant))
+            {
+                var collider = colliderVariant.AsGodotObject();
+
+                if (collider is Node3D node && node.GetParent() is Cell cell)
+                {
+                    GD.Print("Build call");
+                    _game.TryBuildTowerOn(cell);
+                }
+            }
+        }
     }
 }

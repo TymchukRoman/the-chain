@@ -1,10 +1,15 @@
-[gd_scene load_steps=11 format=3 uid="uid://cvpqmjmwxjgaa"]
+[gd_scene load_steps=16 format=3 uid="uid://cvpqmjmwxjgaa"]
 
+[ext_resource type="Script" uid="uid://cudqp7nc2np8k" path="res://Scripts/Game.cs" id="1_fgofq"]
+[ext_resource type="PackedScene" uid="uid://bykkrmxw0qfhv" path="res://Scenes/Elements/Tower.tscn" id="2_2irst"]
+[ext_resource type="PackedScene" uid="uid://clchugy4gfjl3" path="res://Scenes/UI/GameUI.tscn" id="2_7lihs"]
 [ext_resource type="PackedScene" uid="uid://cnlum3hcgtkki" path="res://Scenes/UI/InGameMenu.tscn" id="2_gl6un"]
 [ext_resource type="Script" uid="uid://cdh3didpv3wp1" path="res://Scripts/Camera/CameraRig.cs" id="2_j5yw3"]
 [ext_resource type="Script" uid="uid://gyecjb5rsh46" path="res://Scripts/Elements/Map.cs" id="3_j5yw3"]
 [ext_resource type="PackedScene" uid="uid://1j2q34l7skaq" path="res://Scenes/Elements/Cell.tscn" id="4_kldst"]
 [ext_resource type="PackedScene" uid="uid://t0uk7ntnfc0j" path="res://Scenes/Elements/Castle.tscn" id="5_b2bpf"]
+[ext_resource type="PackedScene" uid="uid://unynsvm46w4b" path="res://Scenes/Elements/Enemy.tscn" id="6_enemy"]
+[ext_resource type="Script" uid="uid://14y36uqmwd0t" path="res://Scripts/Elements/EnemySpawner.cs" id="7_spawner"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_b2bpf"]
 
@@ -16,16 +21,26 @@ background_mode = 2
 background_color = Color(0.690416, 0.793427, 1, 1)
 sky = SubResource("Sky_7lihs")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kldst"]
-albedo_color = Color(0.00784314, 0.0509804, 0.0509804, 0.4)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_b2bpf"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_b2bpf"]
-material = SubResource("StandardMaterial3D_kldst")
+material = SubResource("StandardMaterial3D_b2bpf")
 size = Vector2(50, 20)
 
 [node name="Root" type="Node3D"]
+script = ExtResource("1_fgofq")
+UiPath = NodePath("GameUi")
+TowerScene = ExtResource("2_2irst")
+EnemyScene = ExtResource("6_enemy")
 
 [node name="InGameMenu" parent="." instance=ExtResource("2_gl6un")]
+
+[node name="GameUi" parent="." instance=ExtResource("2_7lihs")]
+
+[node name="EnemySpawner" type="Node3D" parent="."]
+script = ExtResource("7_spawner")
+EnemyScene = ExtResource("6_enemy")
+MaxEnemies = 8
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_b2bpf")
