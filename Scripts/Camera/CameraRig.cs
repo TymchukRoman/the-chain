@@ -74,11 +74,11 @@ public partial class CameraRig : Node3D
 
     private void HandleRotation(float delta)
     {
-        if (Input.IsActionPressed("rotate_left"))
+        if (Input.IsActionPressed("rotate_right"))
         {
             _pivot.RotateY(Mathf.DegToRad(RotateSpeed));
         }
-        if (Input.IsActionPressed("rotate_right"))
+        if (Input.IsActionPressed("rotate_left"))
         {
             _pivot.RotateY(Mathf.DegToRad(-RotateSpeed));
         }

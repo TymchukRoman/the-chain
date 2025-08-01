@@ -6,7 +6,8 @@ public partial class Game : Node3D
     [Export] public NodePath UiPath;
     [Export] public PackedScene TowerScene;
     [Export] public PackedScene EnemyScene;
-    [Export] public int TowerCost = 20;
+    [Export] public int TowerPeopleCost = 5;
+    [Export] public int TowerWoodCost = 20;
     private GameUI _ui;
     private EnemySpawner _spawner;
 
@@ -18,15 +19,14 @@ public partial class Game : Node3D
         { "wood", 100 },
         { "ammo", 50 },
         { "food", 30 },
-        { "people", 10 }
+        { "people", 100 }
     };
-    
-    // Resource supply system
+
     private float _supplyTimer = 0.0f;
     private const float SUPPLY_INTERVAL = 20.0f; // Supply every 20 seconds
     private const int WOOD_PER_RANK = 50; // Base wood per rank
-    private float _lastFrameTime = 0.0f;
-    
+    private const int PEOPLE_PER_RANK = 10; // Base people per rank
+    private float _lastFrameTime = 0.03f;
     public void BuildTowerOnCell(Cell cell)
     {
         if (cell.IsOccupied)
@@ -35,28 +35,30 @@ public partial class Game : Node3D
             return;
         }
 
-        if (!HasResource("wood", TowerCost))
+        // Check for both wood and people
+        if (!HasResource("wood", TowerWoodCost) || !HasResource("people", TowerPeopleCost))
         {
-            GD.Print("Not enough wood to build tower!");
+            GD.Print("Not enough resources to build tower! Need 20 wood and " + TowerPeopleCost + " people");
             return;
         }
 
         var tower = TowerScene.Instantiate<Tower>();
         AddChild(tower);
         tower.GlobalPosition = cell.GlobalPosition;
-        
+
         // Set the cell reference for cleanup when tower is destroyed
         tower.SetBuiltOnCell(cell);
-        
+
         // Set the tower reference in the cell
         cell.SetBuiltTower(tower);
 
-        if (SpendResource("wood", TowerCost))
+        // Spend both resources
+        if (SpendResource("wood", TowerWoodCost) && SpendResource("people", TowerPeopleCost))
         {
             cell.MarkOccupied();
             GD.Print("Tower built successfully!");
         }
-        
+
         // Start game after building first tower
         if (!_gameStarted)
         {
@@ -70,7 +72,6 @@ public partial class Game : Node3D
         _spawner = GetNode<EnemySpawner>("EnemySpawner");
         UpdateUI();
     }
-    
     public override void _Process(double delta)
     {
         if (_gameStarted)
@@ -78,30 +79,25 @@ public partial class Game : Node3D
             UpdateSupplyTimer((float)delta);
         }
     }
-    
     private void UpdateSupplyTimer(float delta)
     {
-        // Use a more robust timer that's less affected by frame rate issues
         _supplyTimer += delta;
-        
-        // Clamp timer to prevent it from going over the interval
         if (_supplyTimer >= SUPPLY_INTERVAL)
         {
             GiveResourceSupply();
             _supplyTimer = 0.0f;
         }
-        
-        // Update UI more frequently for smooth countdown
         UpdateUI();
     }
-    
     private void GiveResourceSupply()
     {
         int woodToGive = WOOD_PER_RANK * _rank;
+        int peopleToGive = PEOPLE_PER_RANK * _rank;
         _resources["wood"] += woodToGive;
-        
+        _resources["people"] += peopleToGive;
+
+        GD.Print($"Supply given: {woodToGive} wood, {peopleToGive} people");
     }
-    
     private void StartGame()
     {
         _gameStarted = true;
@@ -114,7 +110,6 @@ public partial class Game : Node3D
         CheckRank();
         UpdateUI();
     }
-    
     public void OnTowerDestroyed()
     {
         GD.Print("Tower destroyed!");
@@ -126,7 +121,6 @@ public partial class Game : Node3D
             panel.Hide();
         }
     }
-    
     public bool UpgradeTower(Tower tower)
     {
         if (tower == null)
@@ -142,13 +136,13 @@ public partial class Game : Node3D
         }
         
         int upgradeCost = tower.GetUpgradeCost();
-        if (!HasResource("wood", upgradeCost))
+        if (!HasResource("people", upgradeCost))
         {
-            GD.Print("Cannot upgrade: insufficient wood (need " + upgradeCost + ")");
+            GD.Print("Cannot upgrade: insufficient people (need " + upgradeCost + ")");
             return false;
         }
         
-        if (SpendResource("wood", upgradeCost))
+        if (SpendResource("people", upgradeCost))
         {
             tower.TryUpgrade(this);
             GD.Print("Tower upgraded successfully!");
@@ -157,7 +151,6 @@ public partial class Game : Node3D
         
         return false;
     }
-    
     public bool RepairTower(Tower tower)
     {
         if (tower == null)
@@ -173,13 +166,13 @@ public partial class Game : Node3D
         }
         
         int repairCost = tower.GetRepairCost();
-        if (!HasResource("wood", repairCost))
+        if (!HasResource("people", repairCost))
         {
-            GD.Print("Cannot repair: insufficient wood (need " + repairCost + ")");
+            GD.Print("Cannot repair: insufficient people (need " + repairCost + ")");
             return false;
         }
         
-        if (SpendResource("wood", repairCost))
+        if (SpendResource("people", repairCost))
         {
             tower.Repair();
             GD.Print("Tower repaired successfully!");
@@ -188,7 +181,6 @@ public partial class Game : Node3D
         
         return false;
     }
-    
     public void DemolishTower(Tower tower)
     {
         if (tower == null)
@@ -254,16 +246,11 @@ public partial class Game : Node3D
         else if (_rp < 520 && _rank > 8) newRank = 8;
         else if (_rp < 750 && _rank > 9) newRank = 9;
         else if (_rp < 950 && _rank > 10) newRank = 10;
-        
-        // Handle rank changes
+
         if (newRank != _rank)
         {
-            if (newRank > _rank)
+            if (newRank < _rank)
             {
-            }
-            else
-            {
-                // Penalty for demotion - lose some RP
                 _rp = Mathf.Max(0, _rp - 20);
             }
             _rank = newRank;
@@ -273,11 +260,10 @@ public partial class Game : Node3D
     private void UpdateUI()
     {
         int currentWave = _spawner != null ? _spawner.GetCurrentWave() : 1;
-        
-        // Calculate time until next supply more robustly
+
         float timeUntilSupply = SUPPLY_INTERVAL - _supplyTimer;
-        timeUntilSupply = Mathf.Max(0.0f, timeUntilSupply); // Ensure it doesn't go negative
-        
+        timeUntilSupply = Mathf.Max(0.0f, timeUntilSupply);
+
         _ui.UpdateUI(_rp, _rank, _resources, currentWave, timeUntilSupply);
     }
 }

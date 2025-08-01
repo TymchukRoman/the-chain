@@ -11,7 +11,7 @@
 [ext_resource type="PackedScene" uid="uid://unynsvm46w4b" path="res://Scenes/Elements/Enemy.tscn" id="6_enemy"]
 [ext_resource type="PackedScene" uid="uid://bvn8x7y203k4m" path="res://Scenes/Elements/TowerEnemy.tscn" id="6_tower_enemy"]
 [ext_resource type="Script" uid="uid://14y36uqmwd0t" path="res://Scripts/Elements/EnemySpawner.cs" id="7_spawner"]
-[ext_resource type="PackedScene" path="res://Scenes/UI/HexManagementPanel.tscn" id="8_panel"]
+[ext_resource type="PackedScene" uid="uid://bqx8y2n3m4k5l" path="res://Scenes/UI/HexManagementPanel.tscn" id="8_panel"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_b2bpf"]
 
@@ -64,7 +64,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0711231, -0.199994, 0.0134
 mesh = SubResource("PlaneMesh_b2bpf")
 
 [node name="Castle" parent="Map" instance=ExtResource("5_b2bpf")]
-transform = Transform3D(0.999938, -0.00385102, -0.0104506, 0.00398203, 0.999913, 0.012543, 0.0104014, -0.0125838, 0.999867, 0.313938, -0.0245403, 6.64329)
+transform = Transform3D(0.999938, -0.00385102, -0.0104506, 0.00398203, 0.999913, 0.012543, 0.0104014, -0.0125838, 0.999867, -1.4721, -0.0238454, 6.64071)
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("2_j5yw3")

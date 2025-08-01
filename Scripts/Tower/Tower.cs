@@ -18,7 +18,7 @@ public partial class Tower : Node3D
     
     // Tower HP system
     [Export] public int MaxHealth = 100;
-    [Export] public int RepairCost = 30;
+    [Export] public int RepairCost = 3; // Base repair cost in people
     [Export] public int DemolishRefund = 10;
     private int _currentHealth;
     
@@ -220,7 +220,7 @@ public partial class Tower : Node3D
         if (!CanUpgrade()) return false;
         
         // Check if player has enough resources
-        if (!game.SpendResource("wood", _upgradeCost)) return false;
+        if (!game.SpendResource("people", _upgradeCost)) return false;
         
         // Upgrade the tower
         _currentLevel++;
@@ -241,9 +241,14 @@ public partial class Tower : Node3D
         // Update level indicator
         UpdateLevelIndicator();
         
-        // Calculate next upgrade cost
-        _upgradeCost = UpgradeCost * _currentLevel+1; // 20, 40, 60
+        // Calculate next upgrade cost (3 * target level)
+        _upgradeCost = 3 * (_currentLevel + 1);
         
+        // Heal the tower when upgraded
+        _currentHealth = MaxHealth;
+        UpdateHealthBar();
+        
+        GD.Print($"Tower upgraded to level {_currentLevel}! Health restored to {_currentHealth}/{MaxHealth}");
         
         return true;
     }
@@ -336,7 +341,18 @@ public partial class Tower : Node3D
     
     public int GetRepairCost()
     {
-        return RepairCost;
+        // Calculate total tower cost including upgrades
+        int totalTowerCost = 5; // Base tower cost (5 people)
+        for (int i = 1; i < _currentLevel; i++)
+        {
+            totalTowerCost += 3 * i; // 3 * target level for each upgrade
+        }
+        
+        // Calculate repair cost: total cost * (maxHealth - currentHealth) / 100 + 1
+        int healthDifference = MaxHealth - _currentHealth;
+        int repairCost = (totalTowerCost * healthDifference / 100) + 1;
+        
+        return repairCost;
     }
     
     public void Repair()

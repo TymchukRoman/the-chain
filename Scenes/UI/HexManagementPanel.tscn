@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bqx8y2n3m4k5l"]
 
-[ext_resource type="Script" path="res://Scripts/UI/HexManagementPanel.cs" id="1_panel"]
+[ext_resource type="Script" uid="uid://bvlv4dmg2lblj" path="res://Scripts/UI/HexManagementPanel.cs" id="1_panel"]
 
 [node name="HexManagementPanel" type="Control"]
 layout_mode = 3
@@ -9,6 +9,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 1
 script = ExtResource("1_panel")
 
 [node name="Background" type="Panel" parent="."]
@@ -52,8 +53,8 @@ grow_vertical = 2
 theme_override_constants/separation = 15
 
 [node name="EmptyStateContainer" type="VBoxContainer" parent="Background/ContentContainer"]
-layout_mode = 2
 visible = false
+layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="EmptyLabel" type="Label" parent="Background/ContentContainer/EmptyStateContainer"]
@@ -70,8 +71,8 @@ layout_mode = 2
 text = "Build Tower (20 wood)"
 
 [node name="OccupiedStateContainer" type="VBoxContainer" parent="Background/ContentContainer"]
-layout_mode = 2
 visible = false
+layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="OccupiedLabel" type="Label" parent="Background/ContentContainer/OccupiedStateContainer"]
@@ -82,7 +83,6 @@ horizontal_alignment = 1
 [node name="HealthBar" type="ProgressBar" parent="Background/ContentContainer/OccupiedStateContainer"]
 layout_mode = 2
 value = 75.0
-max_value = 100.0
 
 [node name="HealthText" type="Label" parent="Background/ContentContainer/OccupiedStateContainer"]
 layout_mode = 2
@@ -113,4 +113,4 @@ offset_right = -10.0
 offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 0
-text = "Close" 
+text = "Close"

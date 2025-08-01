@@ -18,9 +18,13 @@ public partial class HexManagementPanel : Control
     private Cell _currentCell;
     private Game _game;
     
+    // Update timer for real-time resource updates
+    private Timer _updateTimer;
+    
     // Constants
-    private const int TOWER_COST = 20;
-    private const int REPAIR_COST = 30;
+    private const int TOWER_WOOD_COST = 20; // Tower costs 20 wood
+    private const int TOWER_PEOPLE_COST = 5; // Tower costs 5 people
+    private const int REPAIR_COST = 3; // Base repair cost in people
     private const int UPGRADE_COST = 100;
     
     public override void _Ready()
@@ -52,21 +56,62 @@ public partial class HexManagementPanel : Control
         // Set high z-index to ensure panel appears above other UI
         ZIndex = 1000;
         
+        // Setup update timer for real-time resource updates
+        _updateTimer = new Timer();
+        _updateTimer.WaitTime = 0.5f; // Update every 0.5 seconds
+        _updateTimer.Timeout += OnUpdateTimer;
+        AddChild(_updateTimer);
+        
     }
     
     public void ShowForCell(Cell cell)
     {
-        GD.Print("ShowForCell called for cell at: " + cell.GridPosition);
+        GD.Print("=== ShowForCell called for cell at: " + cell.GridPosition + " ===");
+        GD.Print("Panel currently visible: " + Visible);
+        GD.Print("Current cell: " + (_currentCell != null ? _currentCell.GridPosition.ToString() : "null"));
+        
+        // Unhighlight previous cell
+        if (_currentCell != null)
+        {
+            _currentCell.SetHighlighted(false);
+            GD.Print("Unhighlighted previous cell");
+        }
         
         _currentCell = cell;
-        PositionNearCell(cell);
+        GD.Print("Set new current cell");
+        
+        // Highlight new cell
+        if (_currentCell != null)
+        {
+            _currentCell.SetHighlighted(true);
+            GD.Print("Highlighted new cell");
+        }
+        
+        // Only position and show if panel is not already visible
+        if (!Visible)
+        {
+            PositionNearCell(cell);
+            Show();
+            
+            // Start the update timer when panel becomes visible
+            if (_updateTimer != null)
+            {
+                _updateTimer.Start();
+            }
+            GD.Print("Panel was hidden, now showing");
+        }
+        else
+        {
+            GD.Print("Panel was already visible, just updating");
+        }
+        
         UpdatePanel();
-        Show();
         
         GD.Print("Panel should now be visible at position: " + Position);
         GD.Print("Panel Visible property: " + Visible);
         GD.Print("Panel Modulate: " + Modulate);
         GD.Print("Panel Z-Index: " + ZIndex);
+        GD.Print("=== End ShowForCell ===");
     }
     
     public void RefreshPanel()
@@ -79,26 +124,48 @@ public partial class HexManagementPanel : Control
     
     public new void Hide()
     {
+        // Unhighlight current cell
+        if (_currentCell != null)
+        {
+            _currentCell.SetHighlighted(false);
+        }
+        
         _currentCell = null;
         base.Hide();
+        
+        // Stop the update timer when panel is hidden
+        if (_updateTimer != null)
+        {
+            _updateTimer.Stop();
+        }
+        
         GD.Print("HexManagementPanel hidden");
     }
     
     private void PositionNearCell(Cell cell)
     {
-        // Start with center position to test visibility
+        // Fixed position in top right corner
         var viewport = GetViewport();
         var viewportSize = viewport.GetVisibleRect().Size;
         
         GD.Print("Viewport size: " + viewportSize);
         
-        // Position in center of screen for testing
-        var x = viewportSize.X / 2 - 150; // Center with 300px width
-        var y = viewportSize.Y / 2 - 200; // Center with 400px height
+        // Get the background panel
+        var backgroundPanel = GetNode<Panel>("Background");
         
-        Position = new Vector2(x, y);
+        // Set the background panel to top-right position
+        backgroundPanel.AnchorLeft = 1.0f;
+        backgroundPanel.AnchorTop = 0.0f;
+        backgroundPanel.AnchorRight = 1.0f;
+        backgroundPanel.AnchorBottom = 0.0f;
         
-        GD.Print("Panel positioned at center: " + Position);
+        // Set offset to position it in top-right corner
+        backgroundPanel.OffsetLeft = -320; // 300 width + 20 margin
+        backgroundPanel.OffsetTop = 20;
+        backgroundPanel.OffsetRight = -20;
+        backgroundPanel.OffsetBottom = 420; // 400 height + 20 margin
+        
+        GD.Print("Background panel positioned at top-right with anchors");
     }
     
     private void UpdatePanel()
@@ -121,15 +188,28 @@ public partial class HexManagementPanel : Control
         _occupiedStateContainer.Hide();
         
         // Update build button cost
-        _towerButton.Text = $"Build Tower ({TOWER_COST} wood)";
+        _towerButton.Text = $"Build Tower ({TOWER_WOOD_COST} wood, {TOWER_PEOPLE_COST} people)";
         
         // Enable/disable based on resources
-        bool canAfford = _game.HasResource("wood", TOWER_COST);
+        bool canAffordWood = _game.HasResource("wood", TOWER_WOOD_COST);
+        bool canAffordPeople = _game.HasResource("people", TOWER_PEOPLE_COST);
+        bool canAfford = canAffordWood && canAffordPeople;
         _towerButton.Disabled = !canAfford;
         
         if (!canAfford)
         {
-            _towerButton.Text += " (Insufficient wood)";
+            if (!canAffordWood && !canAffordPeople)
+            {
+                _towerButton.Text += " (Insufficient wood & people)";
+            }
+            else if (!canAffordWood)
+            {
+                _towerButton.Text += " (Insufficient wood)";
+            }
+            else
+            {
+                _towerButton.Text += " (Insufficient people)";
+            }
         }
     }
     
@@ -164,12 +244,12 @@ public partial class HexManagementPanel : Control
             if (tower.CanUpgrade())
             {
                 int upgradeCost = tower.GetUpgradeCost();
-                _upgradeButton.Text = $"Upgrade ({upgradeCost} wood)";
-                _upgradeButton.Disabled = !_game.HasResource("wood", upgradeCost);
+                _upgradeButton.Text = $"Upgrade ({upgradeCost} people)";
+                _upgradeButton.Disabled = !_game.HasResource("people", upgradeCost);
                 
-                if (!_game.HasResource("wood", upgradeCost))
+                if (!_game.HasResource("people", upgradeCost))
                 {
-                    _upgradeButton.Text += " (Insufficient wood)";
+                    _upgradeButton.Text += " (Insufficient people)";
                 }
             }
             else
@@ -180,27 +260,39 @@ public partial class HexManagementPanel : Control
             
             // Update repair button
             bool needsRepair = tower.GetCurrentHealth() < tower.MaxHealth;
-            _repairButton.Text = $"Repair ({REPAIR_COST} wood)";
-            _repairButton.Disabled = !needsRepair || !_game.HasResource("wood", REPAIR_COST);
+            int repairCost = tower.GetRepairCost(); // Use dynamic repair cost
+            _repairButton.Text = $"Repair ({repairCost} people)";
+            _repairButton.Disabled = !needsRepair || !_game.HasResource("people", repairCost);
             
             if (!needsRepair)
             {
                 _repairButton.Text = "Repair (Full Health)";
             }
-            else if (!_game.HasResource("wood", REPAIR_COST))
+            else if (!_game.HasResource("people", repairCost))
             {
-                _repairButton.Text += " (Insufficient wood)";
+                _repairButton.Text += " (Insufficient people)";
             }
         }
     }
     
     private void OnBuildTower()
     {
-        if (_currentCell == null) return;
+        GD.Print("=== OnBuildTower called! ===");
+        if (_currentCell == null) 
+        {
+            GD.Print("ERROR: Current cell is null!");
+            return;
+        }
+        
+        GD.Print("Building tower on cell at: " + _currentCell.GridPosition);
+        GD.Print("Cell occupied: " + _currentCell.IsOccupied);
         
         _game.BuildTowerOnCell(_currentCell);
+        
         // Keep panel open and refresh it to show occupied state
         UpdatePanel();
+        GD.Print("Tower building attempt completed");
+        GD.Print("=== End OnBuildTower ===");
     }
     
     private void OnUpgradeTower()
@@ -243,20 +335,37 @@ public partial class HexManagementPanel : Control
         }
     }
     
+    private void OnUpdateTimer()
+    {
+        // Update panel if visible and has a current cell
+        if (Visible && _currentCell != null)
+        {
+            UpdatePanel();
+        }
+    }
+    
     public override void _Input(InputEvent @event)
     {
         // Only handle input if panel is visible
         if (!Visible) return;
         
         // Close panel when clicking outside
-        if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed)
+        if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Left)
         {
-            var panelRect = GetNode<Panel>("Background").GetRect();
-            var localMousePos = GetLocalMousePosition();
+            var backgroundPanel = GetNode<Panel>("Background");
+            var panelRect = backgroundPanel.GetRect();
+            var localMousePos = backgroundPanel.GetLocalMousePosition();
             
+            // Check if click is outside the panel
             if (!panelRect.HasPoint(localMousePos))
             {
-                Hide();
+                // Use a longer delay to ensure button clicks are processed
+                GetTree().CreateTimer(0.2f).Timeout += () => {
+                    if (Visible) // Only hide if still visible (button wasn't clicked)
+                    {
+                        Hide();
+                    }
+                };
             }
         }
     }
