@@ -8,25 +8,14 @@ public partial class Game : Node3D
     [Export] public PackedScene EnemyScene;
     [Export] public int TowerPeopleCost = 5;
     [Export] public int TowerWoodCost = 20;
+    
     private GameUI _ui;
-    private EnemySpawner _spawner;
+    private Spawner _spawner;
+    private ResourceManager _resourceManager;
 
     private int _rp = 100;
     private int _rank = 1;
     private bool _gameStarted = false;
-    private Dictionary<string, int> _resources = new()
-    {
-        { "wood", 100 },
-        { "ammo", 50 },
-        { "food", 30 },
-        { "people", 100 }
-    };
-
-    private float _supplyTimer = 0.0f;
-    private const float SUPPLY_INTERVAL = 20.0f; // Supply every 20 seconds
-    private const int WOOD_PER_RANK = 50; // Base wood per rank
-    private const int PEOPLE_PER_RANK = 10; // Base people per rank
-    private float _lastFrameTime = 0.03f;
     public void BuildTowerOnCell(Cell cell)
     {
         if (cell.IsOccupied)
@@ -36,7 +25,7 @@ public partial class Game : Node3D
         }
 
         // Check for both wood and people
-        if (!HasResource("wood", TowerWoodCost) || !HasResource("people", TowerPeopleCost))
+        if (!_resourceManager.HasResource("wood", TowerWoodCost) || !_resourceManager.HasResource("people", TowerPeopleCost))
         {
             GD.Print("Not enough resources to build tower! Need 20 wood and " + TowerPeopleCost + " people");
             return;
@@ -53,7 +42,7 @@ public partial class Game : Node3D
         cell.SetBuiltTower(tower);
 
         // Spend both resources
-        if (SpendResource("wood", TowerWoodCost) && SpendResource("people", TowerPeopleCost))
+        if (_resourceManager.SpendResource("wood", TowerWoodCost) && _resourceManager.SpendResource("people", TowerPeopleCost))
         {
             cell.MarkOccupied();
             GD.Print("Tower built successfully!");
@@ -69,34 +58,57 @@ public partial class Game : Node3D
     public override void _Ready()
     {
         _ui = GetNode<GameUI>(UiPath);
-        _spawner = GetNode<EnemySpawner>("EnemySpawner");
+        _spawner = GetNode<Spawner>("Spawner");
+        _resourceManager = GetNode<ResourceManager>("ResourceManager");
+        
+        // Connect resource manager events
+        _resourceManager.OnResourceChanged += OnResourceChanged;
+        _resourceManager.OnSupplyGiven += OnSupplyGiven;
+        
+        // Connect spawner events to handle enemy events
+        _spawner.OnEnemySpawned += OnEnemySpawned;
+        _spawner.OnTowerEnemySpawned += OnTowerEnemySpawned;
+        
         UpdateUI();
     }
-    public override void _Process(double delta)
+    
+    private void OnResourceChanged(string resourceType, int newAmount)
     {
-        if (_gameStarted)
-        {
-            UpdateSupplyTimer((float)delta);
-        }
-    }
-    private void UpdateSupplyTimer(float delta)
-    {
-        _supplyTimer += delta;
-        if (_supplyTimer >= SUPPLY_INTERVAL)
-        {
-            GiveResourceSupply();
-            _supplyTimer = 0.0f;
-        }
         UpdateUI();
     }
-    private void GiveResourceSupply()
+    
+    private void OnSupplyGiven(int woodAmount, int peopleAmount)
     {
-        int woodToGive = WOOD_PER_RANK * _rank;
-        int peopleToGive = PEOPLE_PER_RANK * _rank;
-        _resources["wood"] += woodToGive;
-        _resources["people"] += peopleToGive;
-
-        GD.Print($"Supply given: {woodToGive} wood, {peopleToGive} people");
+        GD.Print($"Supply given: {woodAmount} wood, {peopleAmount} people");
+        UpdateUI();
+    }
+    
+    private void OnEnemySpawned(RedEnemy enemy)
+    {
+        // Subscribe to enemy events
+        enemy.OnEnemyDied += OnEnemyDied;
+        enemy.OnEnemyReachedTarget += OnEnemyReachedTarget;
+    }
+    
+    private void OnTowerEnemySpawned(BlueEnemy enemy)
+    {
+        // Subscribe to enemy events
+        enemy.OnEnemyDied += OnEnemyDied;
+        enemy.OnEnemyReachedTarget += OnEnemyReachedTarget;
+    }
+    
+    private void OnEnemyDied(Enemy enemy)
+    {
+        // Enemy killed by tower - add RP
+        AddRP(10);
+        GD.Print($"Enemy killed! +10 RP. Total RP: {_rp}");
+    }
+    
+    private void OnEnemyReachedTarget(Enemy enemy)
+    {
+        // Enemy reached castle/tower - subtract RP
+        SubtractRP(15);
+        GD.Print($"Enemy reached target! -15 RP. Total RP: {_rp}");
     }
     private void StartGame()
     {
@@ -108,6 +120,15 @@ public partial class Game : Node3D
     {
         _rp += amount;
         CheckRank();
+        _resourceManager.SetRank(_rank);
+        UpdateUI();
+    }
+    
+    public void SubtractRP(int amount)
+    {
+        _rp = Mathf.Max(0, _rp - amount);
+        CheckRank();
+        _resourceManager.SetRank(_rank);
         UpdateUI();
     }
     public void OnTowerDestroyed()
@@ -136,15 +157,15 @@ public partial class Game : Node3D
         }
         
         int upgradeCost = tower.GetUpgradeCost();
-        if (!HasResource("people", upgradeCost))
+        if (!_resourceManager.HasResource("people", upgradeCost))
         {
             GD.Print("Cannot upgrade: insufficient people (need " + upgradeCost + ")");
             return false;
         }
         
-        if (SpendResource("people", upgradeCost))
+        if (_resourceManager.SpendResource("people", upgradeCost))
         {
-            tower.TryUpgrade(this);
+            tower.TryUpgrade();
             GD.Print("Tower upgraded successfully!");
             return true;
         }
@@ -166,13 +187,13 @@ public partial class Game : Node3D
         }
         
         int repairCost = tower.GetRepairCost();
-        if (!HasResource("people", repairCost))
+        if (!_resourceManager.HasResource("people", repairCost))
         {
             GD.Print("Cannot repair: insufficient people (need " + repairCost + ")");
             return false;
         }
         
-        if (SpendResource("people", repairCost))
+        if (_resourceManager.SpendResource("people", repairCost))
         {
             tower.Repair();
             GD.Print("Tower repaired successfully!");
@@ -191,32 +212,15 @@ public partial class Game : Node3D
         
         // Give refund for demolishing
         int refund = tower.DemolishRefund;
-        _resources["wood"] += refund;
+        _resourceManager.AddResource("wood", refund);
         
         GD.Print("Tower demolished! Refunded " + refund + " wood");
         
         // Demolish the tower (this will handle cell cleanup)
         tower.Demolish();
-        
-        // Update UI to show refund
-        UpdateUI();
     }
 
-    public bool SpendResource(string type, int amount)
-    {
-        if (_resources.ContainsKey(type) && _resources[type] >= amount)
-        {
-            _resources[type] -= amount;
-            UpdateUI();
-            return true;
-        }
-        return false;
-    }
 
-    public bool HasResource(string type, int amount)
-    {
-        return _resources.ContainsKey(type) && _resources[type] >= amount;
-    }
 
     private void CheckRank()
     {
@@ -260,10 +264,8 @@ public partial class Game : Node3D
     private void UpdateUI()
     {
         int currentWave = _spawner != null ? _spawner.GetCurrentWave() : 1;
+        float timeUntilSupply = _resourceManager.GetTimeUntilSupply();
 
-        float timeUntilSupply = SUPPLY_INTERVAL - _supplyTimer;
-        timeUntilSupply = Mathf.Max(0.0f, timeUntilSupply);
-
-        _ui.UpdateUI(_rp, _rank, _resources, currentWave, timeUntilSupply);
+        _ui.UpdateUI(_rp, _rank, _resourceManager.GetAllResources(), currentWave, timeUntilSupply);
     }
 }

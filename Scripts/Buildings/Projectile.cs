@@ -2,7 +2,7 @@ using Godot;
 
 public partial class Projectile : Node3D
 {
-    public Node3D Target { get; set; } // Can be Enemy or TowerEnemy
+    public Node3D Target { get; set; } // Can be Enemy or BlueEnemy
     public int Damage { get; set; }
     public float Speed { get; set; }
     
@@ -49,14 +49,14 @@ public partial class Projectile : Node3D
         
         _hasHit = true;
         
-        // Handle both Enemy and TowerEnemy types
+        // Handle both Enemy and BlueEnemy types
         if (Target is Enemy enemy)
         {
             enemy.TakeDamage(Damage);
         }
-        else if (Target is TowerEnemy towerEnemy)
+        else if (Target is BlueEnemy blueEnemy)
         {
-            towerEnemy.TakeDamage(Damage);
+            blueEnemy.TakeDamage(Damage);
         }
         
         QueueFree();

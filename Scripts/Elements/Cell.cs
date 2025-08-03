@@ -74,22 +74,30 @@ public partial class Cell : Node3D
     // Highlighting methods
     private void SetupHighlight()
     {
-        // Create highlight mesh (slightly larger than the cell)
+        // Create highlight mesh (hex-shaped to match the cell exactly)
         _highlightMesh = new MeshInstance3D();
-        var highlightBox = new BoxMesh();
-        highlightBox.Size = new Vector3(1.2f, 0.1f, 1.2f); // Slightly larger than cell
+        var highlightCylinder = new CylinderMesh();
+        highlightCylinder.RadialSegments = 6; // Hex shape
+        highlightCylinder.CapBottom = false;
+        highlightCylinder.CapTop = true; // Enable top cap for top surface highlighting
+        highlightCylinder.Height = 0.1f;
+        highlightCylinder.TopRadius = 0.8f; // Slightly smaller than cell for better visual
+        highlightCylinder.BottomRadius = 0.8f; // Slightly smaller than cell for better visual
         
         // Create highlight material
         _highlightMaterial = new StandardMaterial3D();
-        _highlightMaterial.AlbedoColor = new Color(1.0f, 1.0f, 0.0f, 0.5f); // Yellow with transparency
+        _highlightMaterial.AlbedoColor = new Color(0.2f, 0.8f, 1.0f, 0.6f); // Blue with transparency
         _highlightMaterial.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
         _highlightMaterial.ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded;
+        _highlightMaterial.EmissionEnabled = true;
+        _highlightMaterial.Emission = new Color(0.2f, 0.8f, 1.0f, 0.3f); // Glowing effect
         
-        _highlightMesh.Mesh = highlightBox;
+        _highlightMesh.Mesh = highlightCylinder;
         _highlightMesh.MaterialOverride = _highlightMaterial;
         
-        // Position slightly above the cell
-        _highlightMesh.Position = new Vector3(0, 0.1f, 0);
+        // Position and rotate to match the cell mesh exactly
+        _highlightMesh.Position = new Vector3(0, 0.05f, 0);
+        _highlightMesh.Transform = new Transform3D(1.55885f, 0, 0.9f, 0, 0.05f, 0, -0.9f, 0, 1.55885f, 0, 0.05f, 0);
         
         // Initially hidden
         _highlightMesh.Visible = false;

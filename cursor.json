@@ -1,0 +1,22 @@
+{
+  "language": "csharp",
+  "include": [
+    "**/*.cs",
+    "**/*.uid",
+    "**/*.tscn",
+    "**/*.tres",
+    "**/*.gd",
+    "project.godot"
+  ],
+  "exclude": [
+    "bin/",
+    "obj/",
+    ".godot/",
+    ".mono/",
+    ".import/",
+    "addons/",
+    "ThirdParty/",
+    "**/*.import",
+    "**/*.dll"
+  ]
+}

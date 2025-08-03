@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-public partial class Tower : Node3D
+public partial class Tower : Building
 {
     [Export] public float Range = 5.0f;
     [Export] public float FireRate = 1.0f; // Shots per second
@@ -16,18 +16,11 @@ public partial class Tower : Node3D
     [Export] public float FireRateIncreasePerLevel = 0.5f; // +0.3 fire rate per level
     [Export] public float RangeIncreasePerLevel = 1.0f; // +1.0 range per level
     
-    // Tower HP system
-    [Export] public int MaxHealth = 100;
-    [Export] public int RepairCost = 3; // Base repair cost in people
-    [Export] public int DemolishRefund = 10;
-    private int _currentHealth;
-    
     // Cell reference for cleanup
-    private Cell _builtOnCell;
     private Game _game;
     
     private float _fireTimer = 0.0f;
-    private Node3D _currentTarget = null; // Can be Enemy or TowerEnemy
+    private Node3D _currentTarget = null; // Can be Enemy or BlueEnemy
     private List<Node3D> _enemiesInRange = new List<Node3D>();
     private Area3D _detectionArea;
     
@@ -39,15 +32,12 @@ public partial class Tower : Node3D
     private Node3D _levelIndicator;
     private MeshInstance3D _levelMesh;
     
-    // Health bar components
-    private Node3D _healthBarContainer;
-    private MeshInstance3D _healthBarBackground;
-    private MeshInstance3D _healthBarFill;
-    private Label3D _healthTextLabel;
-    private bool _healthBarVisible = false;
+
     
     public override void _Ready()
     {
+        base._Ready();
+        
         // Add tower to group for pathfinding
         AddToGroup("towers");
 
@@ -69,24 +59,15 @@ public partial class Tower : Node3D
         // Setup level indicator
         SetupLevelIndicator();
         
-        // Setup health bar
-        SetupHealthBar();
-        
         // Initialize upgrade cost
         _upgradeCost = UpgradeCost;
         
-        // Initialize tower health
-        _currentHealth = MaxHealth;
-        
         // Get reference to Game
         _game = GetNode<Game>("/root/Root");
-
     }
     
     public override void _Process(double delta)
     {
-        UpdateHealthBarRotation();
-        
         if (_currentTarget == null || !IsInstanceValid(_currentTarget))
         {
             FindNewTarget();
@@ -106,7 +87,7 @@ public partial class Tower : Node3D
     
     private void OnEnemyEntered(Node3D body)
     {
-        if (body is Enemy || body is TowerEnemy)
+        if (body is Enemy || body is BlueEnemy)
         {
             _enemiesInRange.Add(body);
             if (_currentTarget == null)
@@ -118,7 +99,7 @@ public partial class Tower : Node3D
     
     private void OnEnemyExited(Node3D body)
     {
-        if (body is Enemy || body is TowerEnemy)
+        if (body is Enemy || body is BlueEnemy)
         {
             _enemiesInRange.Remove(body);
             if (_currentTarget == body)
@@ -215,12 +196,35 @@ public partial class Tower : Node3D
         return _upgradeCost;
     }
     
-    public bool TryUpgrade(Game game)
+    public override int GetRepairCost()
+    {
+        // Calculate total tower cost including upgrades
+        int totalTowerCost = 5; // Base tower cost (5 people)
+        for (int i = 1; i < _currentLevel; i++)
+        {
+            totalTowerCost += 3 * i; // 3 * target level for each upgrade
+        }
+        
+        // Calculate repair cost: total cost * (maxHealth - currentHealth) / 100 + 1
+        int healthDifference = MaxHealth - _currentHealth;
+        int repairCost = (totalTowerCost * healthDifference / 100) + 1;
+        
+        return repairCost;
+    }
+    
+    protected override void RemoveFromGroups()
+    {
+        // Remove from towers group
+        RemoveFromGroup("towers");
+    }
+    
+    public bool TryUpgrade()
     {
         if (!CanUpgrade()) return false;
         
         // Check if player has enough resources
-        if (!game.SpendResource("people", _upgradeCost)) return false;
+        var resourceManager = GetNode<ResourceManager>("/root/Root/ResourceManager");
+        if (resourceManager == null || !resourceManager.SpendResource("people", _upgradeCost)) return false;
         
         // Upgrade the tower
         _currentLevel++;
@@ -275,12 +279,9 @@ public partial class Tower : Node3D
         }
     }
     
-    public void TakeDamage(int damage)
+    public override void TakeDamage(int damage)
     {
-        _currentHealth -= damage;
-        if (_currentHealth < 0) _currentHealth = 0;
-        
-        UpdateHealthBar();
+        base.TakeDamage(damage);
         
         // Refresh management panel if it's open for this cell
         if (_builtOnCell != null)
@@ -292,68 +293,15 @@ public partial class Tower : Node3D
             }
         }
         
-        if (_currentHealth <= 0)
+        // Notify Game that tower was destroyed if this tower is destroyed
+        if (_currentHealth <= 0 && _game != null)
         {
-            // Mark the cell as empty when tower is destroyed
-            if (_builtOnCell != null)
-            {
-                _builtOnCell.RemoveTower();
-                _builtOnCell.MarkEmpty();
-            }
-            // Notify Game that tower was destroyed
-            if (_game != null)
-            {
-                _game.OnTowerDestroyed();
-            }
-            QueueFree();
+            // Remove from towers group when destroyed
+            RemoveFromGroup("towers");
+            _game.OnTowerDestroyed();
         }
     }
     
-    public Vector3 GetTowerPosition()
-    {
-        return GlobalPosition;
-    }
-    
-    public bool IsAlive()
-    {
-        return _currentHealth > 0;
-    }
-    
-    public int GetCurrentHealth()
-    {
-        return _currentHealth;
-    }
-    
-    public void SetBuiltOnCell(Cell cell)
-    {
-        _builtOnCell = cell;
-    }
-    
-    public Cell GetBuiltOnCell()
-    {
-        return _builtOnCell;
-    }
-    
-    public bool CanRepair()
-    {
-        return _currentHealth < MaxHealth;
-    }
-    
-    public int GetRepairCost()
-    {
-        // Calculate total tower cost including upgrades
-        int totalTowerCost = 5; // Base tower cost (5 people)
-        for (int i = 1; i < _currentLevel; i++)
-        {
-            totalTowerCost += 3 * i; // 3 * target level for each upgrade
-        }
-        
-        // Calculate repair cost: total cost * (maxHealth - currentHealth) / 100 + 1
-        int healthDifference = MaxHealth - _currentHealth;
-        int repairCost = (totalTowerCost * healthDifference / 100) + 1;
-        
-        return repairCost;
-    }
     
     public void Repair()
     {
@@ -395,113 +343,5 @@ public partial class Tower : Node3D
         QueueFree();
     }
     
-    private void SetupHealthBar()
-    {
-        // Create health bar container
-        _healthBarContainer = new Node3D();
-        AddChild(_healthBarContainer);
-        
-        // Create background bar
-        var backgroundMesh = new BoxMesh();
-        backgroundMesh.Size = new Vector3(2.0f, 0.2f, 0.1f);
-        var backgroundMaterial = new StandardMaterial3D();
-        backgroundMaterial.AlbedoColor = new Color(0.1f, 0.1f, 0.1f, 1.0f);
-        backgroundMaterial.EmissionEnabled = true;
-        backgroundMaterial.Emission = new Color(0.1f, 0.1f, 0.1f, 1.0f);
-        backgroundMesh.Material = backgroundMaterial;
-        
-        _healthBarBackground = new MeshInstance3D();
-        _healthBarBackground.Mesh = backgroundMesh;
-        _healthBarContainer.AddChild(_healthBarBackground);
-        
-        // Create fill bar
-        var fillMesh = new BoxMesh();
-        fillMesh.Size = new Vector3(1.8f, 0.16f, 0.08f);
-        var fillMaterial = new StandardMaterial3D();
-        fillMaterial.AlbedoColor = new Color(0.2f, 1.0f, 0.2f, 1.0f); // Green color for towers
-        fillMaterial.EmissionEnabled = true;
-        fillMaterial.Emission = new Color(0.2f, 1.0f, 0.2f, 1.0f);
-        fillMesh.Material = fillMaterial;
-        
-        _healthBarFill = new MeshInstance3D();
-        _healthBarFill.Mesh = fillMesh;
-        _healthBarFill.Position = new Vector3(0, 0, 0.02f);
-        _healthBarContainer.AddChild(_healthBarFill);
-        
-        // Create health text label
-        _healthTextLabel = new Label3D();
-        _healthTextLabel.Text = _currentHealth + "/" + MaxHealth;
-        _healthTextLabel.FontSize = 24;
-        _healthTextLabel.PixelSize = 0.02f;
-        _healthTextLabel.Position = new Vector3(0, 0.3f, 0.03f);
-        _healthTextLabel.HorizontalAlignment = HorizontalAlignment.Center;
-        _healthTextLabel.VerticalAlignment = VerticalAlignment.Center;
-        _healthBarContainer.AddChild(_healthTextLabel);
-        
-        // Position health bar higher above tower
-        _healthBarContainer.Position = new Vector3(0, 2.5f, 0);
-        
-        // Initially hide health bar
-        _healthBarContainer.Visible = false;
-    }
-    
-    private void UpdateHealthBar()
-    {
-        if (_healthBarContainer == null) return;
-        
-        float healthPercentage = (float)_currentHealth / MaxHealth;
-        healthPercentage = Mathf.Clamp(healthPercentage, 0.0f, 1.0f);
-        
-        // Update fill bar width
-        var fillMesh = _healthBarFill.Mesh as BoxMesh;
-        if (fillMesh != null)
-        {
-            fillMesh.Size = new Vector3(1.8f * healthPercentage, 0.16f, 0.08f);
-        }
-        
-        // Update fill bar color
-        var fillMaterial = _healthBarFill.GetActiveMaterial(0) as StandardMaterial3D;
-        if (fillMaterial != null)
-        {
-            if (healthPercentage > 0.6f)
-            {
-                fillMaterial.AlbedoColor = new Color(0.2f, 1.0f, 0.2f, 1.0f); // Green
-                fillMaterial.Emission = new Color(0.2f, 1.0f, 0.2f, 1.0f);
-            }
-            else if (healthPercentage > 0.3f)
-            {
-                fillMaterial.AlbedoColor = new Color(1.0f, 1.0f, 0.2f, 1.0f); // Yellow
-                fillMaterial.Emission = new Color(1.0f, 1.0f, 0.2f, 1.0f);
-            }
-            else
-            {
-                fillMaterial.AlbedoColor = new Color(1.0f, 0.2f, 0.2f, 1.0f); // Red
-                fillMaterial.Emission = new Color(1.0f, 0.2f, 0.2f, 1.0f);
-            }
-        }
-        
-        // Update health text
-        if (_healthTextLabel != null)
-        {
-            _healthTextLabel.Text = _currentHealth + "/" + MaxHealth;
-        }
-        
-        // Show health bar when damaged
-        if (!_healthBarVisible && _currentHealth < MaxHealth)
-        {
-            _healthBarVisible = true;
-            _healthBarContainer.Visible = true;
-        }
-    }
-    
-    private void UpdateHealthBarRotation()
-    {
-        if (_healthBarContainer == null) return;
-        
-        var camera = GetViewport().GetCamera3D();
-        if (camera == null) return;
-        
-        _healthBarContainer.LookAt(camera.GlobalPosition);
-        _healthBarContainer.RotateY(Mathf.Pi);
-    }
+
 }

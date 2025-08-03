@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://bvn8x7y203k4m"]
 
-[ext_resource type="Script" uid="uid://cunqyy68ruxx" path="res://Scripts/Elements/TowerEnemy.cs" id="1_tower_enemy"]
+[ext_resource type="Script" uid="uid://cr45p62kdqifj" path="res://Scripts/Enemies/BlueEnemy.cs" id="1_tower_enemy"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_tower_enemy"]
 
@@ -9,7 +9,7 @@ albedo_color = Color(0.2, 0.6, 1, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_q53wh"]
 
-[node name="TowerEnemy" type="CharacterBody3D"]
+[node name="BlueEnemy" type="CharacterBody3D"]
 collision_layer = 2
 script = ExtResource("1_tower_enemy")
 
