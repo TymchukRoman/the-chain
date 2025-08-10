@@ -1,5 +1,12 @@
 using Godot;
 using System;
+using System.Collections.Generic;
+
+public enum AttackType
+{
+    HitAndDie,      // Enemy attacks once and dies
+    Continuous      // Enemy continuously attacks until killed
+}
 
 public abstract partial class Enemy : CharacterBody3D
 {
@@ -17,6 +24,18 @@ public abstract partial class Enemy : CharacterBody3D
     // Health bar component
     protected HealthBar _healthBar;
     
+    // Priority-based targeting system
+    protected string[] _targetPriorityList;
+    protected float _targetSearchTimer = 0.0f;
+    protected const float TARGET_SEARCH_INTERVAL = 0.5f; // Search for new targets every 0.5 seconds
+    
+    // Attack system
+    protected AttackType _attackType = AttackType.HitAndDie;
+    protected float _attackTimer = 0.0f;
+    protected float _attackCooldown = 1.0f; // Time between attacks for continuous enemies
+    protected bool _isAttacking = false;
+    protected const float ATTACK_RANGE = 1.5f; // Distance at which enemy can attack
+    
     // Events
     public delegate void EnemyDiedHandler(Enemy enemy);
     public event EnemyDiedHandler OnEnemyDied;
@@ -28,6 +47,8 @@ public abstract partial class Enemy : CharacterBody3D
     {
         SetupNavigationAgent();
         SetupHealthBar();
+        SetupTargetPriority();
+        SetupAttackType();
         _lastPosition = GlobalPosition;
     }
 
@@ -41,7 +62,9 @@ public abstract partial class Enemy : CharacterBody3D
 
     public override void _Process(double delta)
     {
+        UpdateTargetSearch((float)delta);
         UpdateMovement((float)delta);
+        UpdateAttack((float)delta);
     }
 
     protected virtual void SetupNavigationAgent()
@@ -70,6 +93,111 @@ public abstract partial class Enemy : CharacterBody3D
         _healthBar.Initialize(_currentHealth, MaxHealth);
     }
 
+    protected virtual void SetupTargetPriority()
+    {
+        // Override this in derived classes to set the target priority list
+        // Example: _targetPriorityList = new string[] { "castle" };
+        _targetPriorityList = new string[] { "castle" }; // Default priority
+    }
+
+    protected virtual void SetupAttackType()
+    {
+        // Override this in derived classes to set the attack type
+        _attackType = AttackType.HitAndDie; // Default attack type
+    }
+
+    protected virtual void UpdateTargetSearch(float delta)
+    {
+        if (_targetPriorityList == null || _targetPriorityList.Length == 0) return;
+        
+        _targetSearchTimer += delta;
+        if (_targetSearchTimer >= TARGET_SEARCH_INTERVAL)
+        {
+            _targetSearchTimer = 0.0f;
+            
+            // Check if current target is still valid
+            if (!IsTargetValid())
+            {
+                FindNewTarget();
+            }
+        }
+    }
+
+    protected virtual void FindNewTarget()
+    {
+        if (_targetPriorityList == null || _targetPriorityList.Length == 0) return;
+        
+        // Try to find a target based on priority list
+        foreach (string targetType in _targetPriorityList)
+        {
+            Node3D target = FindTargetByType(targetType);
+            if (target != null)
+            {
+                SetTarget(target);
+                return;
+            }
+        }
+        
+        // If no target found, the enemy will be stuck
+        GD.Print($"Enemy {Name} could not find any valid target from priority list: [{string.Join(", ", _targetPriorityList)}]");
+    }
+
+    protected virtual Node3D FindTargetByType(string targetType)
+    {
+        switch (targetType.ToLower())
+        {
+            case "castle":
+                return FindClosestCastle();
+            case "tower":
+                return FindClosestTower();
+            default:
+                GD.PrintErr($"Unknown target type: {targetType}");
+                return null;
+        }
+    }
+
+    protected virtual Node3D FindClosestCastle()
+    {
+        var castle = GetNode<Node3D>("/root/Root/Map/Castle");
+        if (castle != null && IsInstanceValid(castle))
+        {
+            return castle;
+        }
+        return null;
+    }
+
+    protected virtual Node3D FindClosestTower()
+    {
+        var towers = GetTree().GetNodesInGroup("towers");
+        var validTowers = new List<Tower>();
+        
+        foreach (var towerNode in towers)
+        {
+            if (towerNode is Tower tower && IsInstanceValid(tower) && tower.IsInsideTree() && tower.GetCurrentHealth() > 0)
+            {
+                validTowers.Add(tower);
+            }
+        }
+        
+        if (validTowers.Count == 0) return null;
+        
+        // Find the closest tower
+        Tower closestTower = null;
+        float closestDistance = float.MaxValue;
+        
+        foreach (var tower in validTowers)
+        {
+            float distance = GlobalPosition.DistanceTo(tower.GlobalPosition);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestTower = tower;
+            }
+        }
+        
+        return closestTower;
+    }
+
     protected virtual void UpdateHealthBar()
     {
         if (_healthBar != null)
@@ -78,11 +206,89 @@ public abstract partial class Enemy : CharacterBody3D
         }
     }
 
+    protected virtual void UpdateAttack(float delta)
+    {
+        if (_attackType != AttackType.Continuous || _currentTarget == null) return;
+        
+        if (_isAttacking)
+        {
+            _attackTimer += delta;
+            if (_attackTimer >= _attackCooldown)
+            {
+                _attackTimer = 0.0f;
+                PerformAttack();
+            }
+        }
+        else
+        {
+            // Check if we're close enough to attack
+            if (IsTargetValid())
+            {
+                float distanceToTarget = GlobalPosition.DistanceTo(_currentTarget.GlobalPosition);
+                if (distanceToTarget <= ATTACK_RANGE)
+                {
+                    StartAttacking();
+                }
+            }
+        }
+    }
 
+    protected virtual void StartAttacking()
+    {
+        _isAttacking = true;
+        _attackTimer = 0.0f;
+        // Stop movement when attacking
+        if (_navigationAgent != null)
+        {
+            _navigationAgent.TargetPosition = GlobalPosition;
+        }
+    }
+
+    protected virtual void StopAttacking()
+    {
+        _isAttacking = false;
+        _attackTimer = 0.0f;
+        // Resume movement
+        if (_navigationAgent != null && IsTargetValid())
+        {
+            var targetPosition = GetTargetPosition();
+            if (targetPosition.HasValue)
+            {
+                _navigationAgent.TargetPosition = targetPosition.Value;
+            }
+        }
+    }
+
+    protected virtual void PerformAttack()
+    {
+        if (!IsTargetValid()) return;
+        
+        // Deal damage to the target
+        if (_currentTarget is Tower tower)
+        {
+            tower.TakeDamage(DamageToTarget);
+        }
+        else if (_currentTarget.Name == "Castle")
+        {
+            // Deal damage to castle (you can add castle damage logic here)
+            GD.Print($"Enemy {Name} dealt {DamageToTarget} damage to castle");
+        }
+        
+        // Check if target is still alive
+        if (_currentTarget is Tower targetTower && targetTower.GetCurrentHealth() <= 0)
+        {
+            // Target destroyed, find new target
+            StopAttacking();
+            FindNewTarget();
+        }
+    }
 
     protected virtual void UpdateMovement(float delta)
     {
         if (_navigationAgent == null || _currentTarget == null) return;
+
+        // If we're attacking, don't move
+        if (_isAttacking) return;
 
         // Check if stuck
         float distanceMoved = GlobalPosition.DistanceTo(_lastPosition);
@@ -182,8 +388,19 @@ public abstract partial class Enemy : CharacterBody3D
 
     protected virtual void OnReachedTarget()
     {
-        OnEnemyReachedTarget?.Invoke(this);
-        QueueFree();
+        if (_attackType == AttackType.HitAndDie)
+        {
+            // Hit-and-die enemies attack once and then die
+            PerformAttack();
+            OnEnemyReachedTarget?.Invoke(this);
+            QueueFree();
+        }
+        else if (_attackType == AttackType.Continuous)
+        {
+            // Continuous enemies start attacking and stay alive
+            StartAttacking();
+            // Don't die, just start attacking
+        }
     }
     
     protected bool IsTargetValid()

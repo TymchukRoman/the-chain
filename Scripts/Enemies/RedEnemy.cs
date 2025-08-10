@@ -2,30 +2,22 @@ using Godot;
 
 public partial class RedEnemy : Enemy
 {
-    private Node3D _castle;
-
-    public override void _Ready()
+    protected override void SetupTargetPriority()
     {
-        base._Ready();
-        
-        // Find the castle (assuming it's a child of the root with name "Castle")
-        _castle = GetNode<Node3D>("/root/Root/Map/Castle");
-        if (_castle != null && IsInstanceValid(_castle))
-        {
-            SetTarget(_castle);
-        }
-        else
-        {
-            // If no castle, just destroy this enemy
-            QueueFree();
-        }
+        // Red enemies prioritize castle
+        _targetPriorityList = new string[] { "castle" };
+    }
+
+    protected override void SetupAttackType()
+    {
+        // Red enemies use hit-and-die attack type
+        _attackType = AttackType.HitAndDie;
     }
 
     protected override void OnReachedTarget()
     {
-        
         // Deal damage to castle (if castle has health system)
-        if (_castle != null)
+        if (_currentTarget != null && IsInstanceValid(_currentTarget))
         {
             // You can add castle damage logic here
             // For now, just call the base method which will handle the event

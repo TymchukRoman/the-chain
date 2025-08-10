@@ -10,7 +10,7 @@ public partial class Tower : Building
     [Export] public int MaxLevel = 3;
     
     // Cell reference for cleanup
-    private Game _game;
+    private new Game _game;
     
     private float _fireTimer = 0.0f;
     private Node3D _currentTarget = null; // Can be Enemy or BlueEnemy
@@ -322,7 +322,7 @@ public partial class Tower : Building
     }
     
     
-    public void Repair()
+    public override void Repair()
     {
         if (_currentHealth < MaxHealth)
         {
@@ -342,7 +342,7 @@ public partial class Tower : Building
         }
     }
     
-    public void Demolish()
+    public override void Demolish()
     {
         GD.Print("Tower demolished!");
         
