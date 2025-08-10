@@ -6,8 +6,7 @@ public partial class Game : Node3D
     [Export] public NodePath UiPath;
     [Export] public PackedScene TowerScene;
     [Export] public PackedScene EnemyScene;
-    [Export] public int TowerPeopleCost = 5;
-    [Export] public int TowerWoodCost = 20;
+    // Tower costs are now defined in GameConstants
     
     private GameUI _ui;
     private Spawner _spawner;
@@ -24,10 +23,23 @@ public partial class Game : Node3D
             return;
         }
 
-        // Check for both wood and people
-        if (!_resourceManager.HasResource("wood", TowerWoodCost) || !_resourceManager.HasResource("people", TowerPeopleCost))
+        // Check for all required resources
+        var buildCosts = GameConstants.TOWER_COSTS[0]; // Level 0 -> 1 (build cost)
+        bool canAfford = true;
+        string missingResources = "";
+        
+        foreach (var cost in buildCosts)
         {
-            GD.Print("Not enough resources to build tower! Need 20 wood and " + TowerPeopleCost + " people");
+            if (!_resourceManager.HasResource(cost.Key, cost.Value))
+            {
+                canAfford = false;
+                missingResources += $"{cost.Value} {cost.Key}, ";
+            }
+        }
+        
+        if (!canAfford)
+        {
+            GD.Print($"Not enough resources to build tower! Need: {missingResources.TrimEnd(',', ' ')}");
             return;
         }
 
@@ -41,8 +53,18 @@ public partial class Game : Node3D
         // Set the tower reference in the cell
         cell.SetBuiltTower(tower);
 
-        // Spend both resources
-        if (_resourceManager.SpendResource("wood", TowerWoodCost) && _resourceManager.SpendResource("people", TowerPeopleCost))
+        // Spend all required resources
+        bool allSpent = true;
+        foreach (var cost in buildCosts)
+        {
+            if (!_resourceManager.SpendResource(cost.Key, cost.Value))
+            {
+                allSpent = false;
+                break;
+            }
+        }
+        
+        if (allSpent)
         {
             cell.MarkOccupied();
             GD.Print("Tower built successfully!");
@@ -77,9 +99,9 @@ public partial class Game : Node3D
         UpdateUI();
     }
     
-    private void OnSupplyGiven(int woodAmount, int peopleAmount)
+    private void OnSupplyGiven(int woodAmount, int peopleAmount, int stoneAmount)
     {
-        GD.Print($"Supply given: {woodAmount} wood, {peopleAmount} people");
+        GD.Print($"Supply given: {woodAmount} wood, {peopleAmount} people, {stoneAmount} stone");
         UpdateUI();
     }
     
@@ -156,16 +178,9 @@ public partial class Game : Node3D
             return false;
         }
         
-        int upgradeCost = tower.GetUpgradeCost();
-        if (!_resourceManager.HasResource("people", upgradeCost))
+        // Let the tower handle the upgrade logic with all required resources
+        if (tower.TryUpgrade())
         {
-            GD.Print("Cannot upgrade: insufficient people (need " + upgradeCost + ")");
-            return false;
-        }
-        
-        if (_resourceManager.SpendResource("people", upgradeCost))
-        {
-            tower.TryUpgrade();
             GD.Print("Tower upgraded successfully!");
             return true;
         }
@@ -211,10 +226,9 @@ public partial class Game : Node3D
         }
         
         // Give refund for demolishing
-        int refund = tower.DemolishRefund;
-        _resourceManager.AddResource("wood", refund);
+        _resourceManager.AddResource(GameConstants.WOOD, GameConstants.DEMOLISH_REFUND_WOOD);
         
-        GD.Print("Tower demolished! Refunded " + refund + " wood");
+        GD.Print("Tower demolished! Refunded " + GameConstants.DEMOLISH_REFUND_WOOD + " wood");
         
         // Demolish the tower (this will handle cell cleanup)
         tower.Demolish();

@@ -5,9 +5,8 @@ public partial class GameUI : CanvasLayer
 {
     private Label _rankLabel;
     private Label _woodLabel;
-    private Label _ammoLabel;
-    private Label _foodLabel;
     private Label _peopleLabel;
+    private Label _stoneLabel;
     private Label _waveLabel;
     private Label _supplyTimerLabel;
 
@@ -16,12 +15,10 @@ public partial class GameUI : CanvasLayer
     {
         _rankLabel = GetNode<Label>("Panel/HBoxContainer/Rank");
         _woodLabel = GetNode<Label>("Panel/HBoxContainer/Wood");
-        _ammoLabel = GetNode<Label>("Panel/HBoxContainer/Ammo");
-        _foodLabel = GetNode<Label>("Panel/HBoxContainer/Food");
         _peopleLabel = GetNode<Label>("Panel/HBoxContainer/People");
+        _stoneLabel = GetNode<Label>("Panel/HBoxContainer/Stone");
         _waveLabel = GetNode<Label>("Panel/HBoxContainer/Wave");
         _supplyTimerLabel = GetNode<Label>("Panel/HBoxContainer/SupplyTimer");
-
     }
 
     public void UpdateUI(int rp, int rank, Dictionary<string, int> resources, int currentWave = 1, float timeUntilSupply = 0.0f)
@@ -30,16 +27,13 @@ public partial class GameUI : CanvasLayer
             _rankLabel.Text = $"RP: {rp} | Rank: {rank}";
         
         if (_woodLabel != null)
-            _woodLabel.Text = $"Wood: {resources["wood"]}";
-        
-        if (_ammoLabel != null)
-            _ammoLabel.Text = $"Ammo: {resources["ammo"]}";
-        
-        if (_foodLabel != null)
-            _foodLabel.Text = $"Food: {resources["food"]}";
+            _woodLabel.Text = $"Wood: {resources[GameConstants.WOOD]}";
         
         if (_peopleLabel != null)
-            _peopleLabel.Text = $"People: {resources["people"]}";
+            _peopleLabel.Text = $"People: {resources[GameConstants.PEOPLE]}";
+        
+        if (_stoneLabel != null)
+            _stoneLabel.Text = $"Stone: {resources[GameConstants.STONE]}";
         
         if (_waveLabel != null)
             _waveLabel.Text = $"Wave: {currentWave}";
@@ -56,7 +50,5 @@ public partial class GameUI : CanvasLayer
             
             _supplyTimerLabel.Text = $"Supply: {minutes:00}:{seconds:00}";
         }
-        
-
     }
 }

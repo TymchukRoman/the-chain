@@ -81,8 +81,8 @@ public partial class Cell : Node3D
         highlightCylinder.CapBottom = false;
         highlightCylinder.CapTop = true; // Enable top cap for top surface highlighting
         highlightCylinder.Height = 0.1f;
-        highlightCylinder.TopRadius = 0.8f; // Slightly smaller than cell for better visual
-        highlightCylinder.BottomRadius = 0.8f; // Slightly smaller than cell for better visual
+        highlightCylinder.TopRadius = 0.6f; // Slightly smaller than cell for better visual
+        highlightCylinder.BottomRadius = 0.6f; // Slightly smaller than cell for better visual
         
         // Create highlight material
         _highlightMaterial = new StandardMaterial3D();

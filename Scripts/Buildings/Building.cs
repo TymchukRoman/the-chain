@@ -3,8 +3,7 @@ using Godot;
 public abstract partial class Building : Node3D
 {
     [Export] public int MaxHealth = 100;
-    [Export] public int RepairCost = 3; // Base repair cost in people
-    [Export] public int DemolishRefund = 10;
+    // Repair cost and demolish refund are now defined in GameConstants
     
     protected int _currentHealth;
     protected Cell _builtOnCell;
@@ -109,7 +108,7 @@ public abstract partial class Building : Node3D
 
     public virtual int GetRepairCost()
     {
-        // Simple repair cost based on missing health
+        // Simple repair cost based on missing health using GameConstants
         int healthDifference = MaxHealth - _currentHealth;
         int repairCost = Mathf.Max(1, healthDifference / 10); // 1 people per 10 missing health, minimum 1
         

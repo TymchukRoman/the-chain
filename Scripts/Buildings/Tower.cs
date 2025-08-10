@@ -4,17 +4,10 @@ using System.Collections.Generic;
 
 public partial class Tower : Building
 {
-    [Export] public float Range = 5.0f;
-    [Export] public float FireRate = 1.0f; // Shots per second
-    [Export] public int Damage = 25;
     [Export] public PackedScene ProjectileScene;
     
     // Upgrade system
-    [Export] public int UpgradeCost = 20; // Base cost for first upgrade
     [Export] public int MaxLevel = 3;
-    [Export] public float DamageIncreasePerLevel = 15; // +15 damage per level
-    [Export] public float FireRateIncreasePerLevel = 0.5f; // +0.3 fire rate per level
-    [Export] public float RangeIncreasePerLevel = 1.0f; // +1.0 range per level
     
     // Cell reference for cleanup
     private Game _game;
@@ -24,9 +17,13 @@ public partial class Tower : Building
     private List<Node3D> _enemiesInRange = new List<Node3D>();
     private Area3D _detectionArea;
     
+    // Tower stats
+    private int _damage;
+    private float _fireRate;
+    private float _range;
+    
     // Level system
     private int _currentLevel = 1;
-    private int _upgradeCost = 20; // Current upgrade cost
     
     // Visual level indicator
     private Node3D _levelIndicator;
@@ -41,13 +38,16 @@ public partial class Tower : Building
         // Add tower to group for pathfinding
         AddToGroup("towers");
 
+        // Initialize tower stats for level 1
+        InitializeTowerStats(1);
+
         // Get the existing Area3D from the scene
         _detectionArea = GetNode<Area3D>("Area3D");
 
         // Set up the detection area
         var collisionShape = _detectionArea.GetNode<CollisionShape3D>("CollisionShape3D");
         var sphereShape = new SphereShape3D();
-        sphereShape.Radius = Range;
+        sphereShape.Radius = _range;
         collisionShape.Shape = sphereShape;
 
         _detectionArea.CollisionLayer = 0;
@@ -58,9 +58,6 @@ public partial class Tower : Building
 
         // Setup level indicator
         SetupLevelIndicator();
-        
-        // Initialize upgrade cost
-        _upgradeCost = UpgradeCost;
         
         // Get reference to Game
         _game = GetNode<Game>("/root/Root");
@@ -77,7 +74,7 @@ public partial class Tower : Building
         {
             _fireTimer += (float)delta;
             
-            if (_fireTimer >= 1.0f / FireRate)
+            if (_fireTimer >= 1.0f / _fireRate)
             {
                 FireAtTarget();
                 _fireTimer = 0.0f;
@@ -144,7 +141,7 @@ public partial class Tower : Building
         AddChild(projectile);
         projectile.GlobalPosition = GlobalPosition + Vector3.Up * 1.0f;
         projectile.Target = _currentTarget;
-        projectile.Damage = Damage;
+        projectile.Damage = _damage;
         projectile.Speed = 10.0f;
     }
 
@@ -193,7 +190,14 @@ public partial class Tower : Building
     
     public int GetUpgradeCost()
     {
-        return _upgradeCost;
+        if (_currentLevel >= MaxLevel) return 0;
+        var upgradeCosts = GameConstants.TOWER_COSTS[_currentLevel];
+        return upgradeCosts[GameConstants.PEOPLE]; // Return people cost for UI display
+    }
+    
+    public int GetCurrentLevel()
+    {
+        return _currentLevel;
     }
     
     public override int GetRepairCost()
@@ -222,31 +226,46 @@ public partial class Tower : Building
     {
         if (!CanUpgrade()) return false;
         
-        // Check if player has enough resources
+        // Check if player has enough resources for all required resources
         var resourceManager = GetNode<ResourceManager>("/root/Root/ResourceManager");
-        if (resourceManager == null || !resourceManager.SpendResource("people", _upgradeCost)) return false;
+        if (resourceManager == null) return false;
+        
+        var upgradeCosts = GameConstants.TOWER_COSTS[_currentLevel];
+        bool canAfford = true;
+        
+        foreach (var cost in upgradeCosts)
+        {
+            if (!resourceManager.HasResource(cost.Key, cost.Value))
+            {
+                canAfford = false;
+                break;
+            }
+        }
+        
+        if (!canAfford) return false;
+        
+        // Spend all required resources
+        foreach (var cost in upgradeCosts)
+        {
+            resourceManager.SpendResource(cost.Key, cost.Value);
+        }
         
         // Upgrade the tower
         _currentLevel++;
         
-        // Increase stats
-        Damage += (int)DamageIncreasePerLevel;
-        FireRate += FireRateIncreasePerLevel;
-        Range += RangeIncreasePerLevel;
+        // Update tower stats for new level
+        InitializeTowerStats(_currentLevel);
         
         // Update detection area
         var collisionShape = _detectionArea.GetNode<CollisionShape3D>("CollisionShape3D");
         var sphereShape = collisionShape.Shape as SphereShape3D;
         if (sphereShape != null)
         {
-            sphereShape.Radius = Range;
+            sphereShape.Radius = _range;
         }
         
         // Update level indicator
         UpdateLevelIndicator();
-        
-        // Calculate next upgrade cost (3 * target level)
-        _upgradeCost = 3 * (_currentLevel + 1);
         
         // Heal the tower when upgraded
         _currentHealth = MaxHealth;
@@ -343,5 +362,21 @@ public partial class Tower : Building
         QueueFree();
     }
     
-
+    private void InitializeTowerStats(int level)
+    {
+        if (GameConstants.TOWER_STATS.ContainsKey(level))
+        {
+            var stats = GameConstants.TOWER_STATS[level];
+            _damage = stats.Damage;
+            _fireRate = stats.FireRate;
+            _range = stats.Range;
+            MaxHealth = stats.MaxHealth;
+            
+            GD.Print($"Tower stats initialized for level {level}: Damage={_damage}, FireRate={_fireRate}, Range={_range}, MaxHealth={MaxHealth}");
+        }
+        else
+        {
+            GD.PrintErr($"No stats found for tower level {level}");
+        }
+    }
 }

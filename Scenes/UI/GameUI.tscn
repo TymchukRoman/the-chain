@@ -23,13 +23,10 @@ layout_mode = 2
 [node name="Wood" type="Label" parent="Panel/HBoxContainer"]
 layout_mode = 2
 
-[node name="Ammo" type="Label" parent="Panel/HBoxContainer"]
-layout_mode = 2
-
-[node name="Food" type="Label" parent="Panel/HBoxContainer"]
-layout_mode = 2
-
 [node name="People" type="Label" parent="Panel/HBoxContainer"]
+layout_mode = 2
+
+[node name="Stone" type="Label" parent="Panel/HBoxContainer"]
 layout_mode = 2
 
 [node name="Wave" type="Label" parent="Panel/HBoxContainer"]

@@ -22,11 +22,7 @@ public partial class HexManagementPanel : Control
     // Update timer for real-time resource updates
     private Timer _updateTimer;
     
-    // Constants
-    private const int TOWER_WOOD_COST = 20; // Tower costs 20 wood
-    private const int TOWER_PEOPLE_COST = 5; // Tower costs 5 people
-    private const int REPAIR_COST = 3; // Base repair cost in people
-    private const int UPGRADE_COST = 100;
+    // Constants - now using GameConstants
     
     public override void _Ready()
     {
@@ -173,29 +169,25 @@ public partial class HexManagementPanel : Control
         _emptyStateContainer.Show();
         _occupiedStateContainer.Hide();
         
-        // Update build button cost
-        string buttonText = $"Build Tower ({TOWER_WOOD_COST} wood, {TOWER_PEOPLE_COST} people)";
+        // Update build button cost using GameConstants
+        var buildCosts = GameConstants.TOWER_COSTS[0]; // Level 0 -> 1 (build cost)
+        string buttonText = "Build Tower (";
+        bool canAfford = true;
         
-        // Enable/disable based on resources
-        bool canAffordWood = _resourceManager.HasResource("wood", TOWER_WOOD_COST);
-        bool canAffordPeople = _resourceManager.HasResource("people", TOWER_PEOPLE_COST);
-        bool canAfford = canAffordWood && canAffordPeople;
+        foreach (var cost in buildCosts)
+        {
+            if (!_resourceManager.HasResource(cost.Key, cost.Value))
+            {
+                canAfford = false;
+            }
+            buttonText += $"{cost.Value} {cost.Key}, ";
+        }
+        buttonText = buttonText.TrimEnd(',', ' ') + ")";
         _towerButton.Disabled = !canAfford;
         
         if (!canAfford)
         {
-            if (!canAffordWood && !canAffordPeople)
-            {
-                buttonText += " (Insufficient wood & people)";
-            }
-            else if (!canAffordWood)
-            {
-                buttonText += " (Insufficient wood)";
-            }
-            else
-            {
-                buttonText += " (Insufficient people)";
-            }
+            buttonText += " (Insufficient resources)";
         }
         
         // Apply text truncation
@@ -232,13 +224,25 @@ public partial class HexManagementPanel : Control
             // Update upgrade button
             if (tower.CanUpgrade())
             {
-                int upgradeCost = tower.GetUpgradeCost();
-                string upgradeText = $"Upgrade ({upgradeCost} people)";
-                _upgradeButton.Disabled = !_resourceManager.HasResource("people", upgradeCost);
+                var upgradeCosts = GameConstants.TOWER_COSTS[tower.GetCurrentLevel()];
+                string upgradeText = "Upgrade (";
+                bool canAfford = true;
                 
-                if (!_resourceManager.HasResource("people", upgradeCost))
+                foreach (var cost in upgradeCosts)
                 {
-                    upgradeText += " (Insufficient people)";
+                    if (!_resourceManager.HasResource(cost.Key, cost.Value))
+                    {
+                        canAfford = false;
+                    }
+                    upgradeText += $"{cost.Value} {cost.Key}, ";
+                }
+                upgradeText = upgradeText.TrimEnd(',', ' ') + ")";
+                
+                _upgradeButton.Disabled = !canAfford;
+                
+                if (!canAfford)
+                {
+                    upgradeText += " (Insufficient resources)";
                 }
                 _upgradeButton.Text = TruncateText(upgradeText, 30);
             }
